@@ -13,6 +13,7 @@ namespace CS392_WebApplication.Data
             var roleManager = service.GetService<RoleManager<IdentityRole>>();
             await roleManager.CreateAsync(new IdentityRole(Roles.Admin.ToString()));
             await roleManager.CreateAsync(new IdentityRole(Roles.User.ToString()));
+            await roleManager.CreateAsync(new IdentityRole(Roles.School.ToString()));
 
             //creating admin
             var user = new IdentityUser
