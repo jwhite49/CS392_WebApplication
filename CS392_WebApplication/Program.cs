@@ -1,6 +1,7 @@
 using CS392_WebApplication.Data;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -17,6 +18,8 @@ builder.Services.AddIdentity<IdentityUser, IdentityRole>(options =>
 
 // Add framework services.
 builder.Services.AddRazorPages();
+builder.Services.AddDbContext<UserDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("UserDbContext") ?? throw new InvalidOperationException("Connection string 'UserDbContext' not found.")));
 builder.Services.AddControllersWithViews();
 
 var app = builder.Build();
