@@ -4,7 +4,68 @@
     ViewData["Title"] = "Home page";
 }
 
-<div class="text-center">
+<!--<div class="text-center">
     <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
-</div>
+    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASPCore</a>.</p>
+</div> -->
+
+<style>
+    table, th, td {
+        border: 1px solid black;
+    }
+    table{
+        width:100%
+    }
+    
+
+    .popularButtons p{
+        display: inline;
+        color: red;
+    }
+
+    .middleButtons p {
+        display: inline;
+        color: red;
+        text-align: center;
+    }
+
+    .middleButtons, .popularButtons {
+        text-align: center;
+        justify-content: space-around;
+    }
+
+</style>
+
+<table>
+    <tr>
+        <td colspan="3">
+            <p> Main Image </p>
+        </td>
+    </tr>
+
+    <tr>
+        <td colspan="3">
+            <div class="middleButtons">
+            <p>Create a list </p>
+            <p> Shop by:</p>
+            <p>bundles</p>
+            </div>
+        </td>
+    </tr>
+    <tr>
+        <td>
+            <p> Popular Items</p>
+        </td>
+    </tr>
+    <tr>
+         <td colspan="3">
+            <div class="popularButtons">
+                <p>Caluclator</p>
+                <p>NoteBooks</p>
+                <p>Pencils</p>
+                <p>Backpacks</p>
+                <p>Bottles</p>
+            </div>
+         </td>
+    </tr>
+</table>
