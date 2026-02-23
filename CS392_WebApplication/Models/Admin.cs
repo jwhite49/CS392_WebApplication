@@ -7,6 +7,6 @@ namespace CS392_WebApplication.Models
     {
         [Key, ForeignKey("User")]
         public int AdminID { get; set; }
-       
+
     }
 }

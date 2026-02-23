@@ -11,7 +11,7 @@ namespace CS392_WebApplication.Models
         public int quantity { get; set; }
         [Required] public float price_at_purchase { get; set; }
 
-        public enum PurchaseType { Retail, Bulk}
-        public PurchaseType purchase_type{ get; set; }
+        public enum PurchaseType { Retail, Bulk }
+        public PurchaseType purchase_type { get; set; }
     }
 }
