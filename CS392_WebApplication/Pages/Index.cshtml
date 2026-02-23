@@ -9,56 +9,24 @@
     <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASPCore</a>.</p>
 </div> -->
 
-<style>
-    table, th, td {
-        border: 1px solid black;
-    }
-    table{
-        width:100%;
-        height:100%;
-    }
-    .banner{
-        width: 100vw;
-    }
-   
-    .popularButtons p{
-        display: inline;
-        color: red;
-    }
-    .popularButtons button{
-        cursor: pointer;
-        display: inline-block;
-        border: none;
-        background-color: none;
-        border-radius:10px;
-    }
+<!-- Nav info is in _Layout.cshtml -->
 
-    .middleButtons p {
-        display: inline;
-        color: red;
-        text-align: center;
-        padding:10px;
-    }
-    .middleButtons button {
-        cursor: pointer;
-        border: none;
-        border-radius: 10px;
-    }
-   
-    .popularButtons img{
-        height:120px;
-    }
-    .middleButtons, .popularButtons {
-        text-align: center;
-        justify-content: space-around;
-        padding:5px 10px 5px 10px;
-    }
+<!--Login "Modal"-->
+<div id="loginModal">
+    <div id="loginModal-container">
+    <span onclick="closeModal()" class="closeLogin">X</span>
+    <form method="post" asp-page="/Pages/LoginModel">
+        <label for="Username">Username</label>
+        <input type="text" asp-for="Username" required/>
+        <!--"asp-for" connects textfield to model in Index.cshtml.cs -->
+        <label for="Password">Password</label>
+        <input type="password" asp-for="Password" required />
+        <br />
+        <input type="submit" value="Sign In"/>
+    </form>
+    </div>
+</div>
 
-    button:hover {
-        transform: scale(1.1);
-        transition: transform 0.3s;
-    }
-</style>
 
 <table>
     <tr>

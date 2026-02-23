@@ -1,3 +1,9 @@
+:root{
+  --schoolYellow: #F0D768;
+  --schoolOutline: #5B8D8D;
+  --schoolFill: #A7D7D8;
+}
+
 html {
   font-size: 14px;
 }
@@ -12,11 +18,86 @@ html {
   box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
 }
 
-html {
-  position: relative;
-  min-height: 100%;
+/* Styles for login button */
+#loginModal{
+  display:none;
+  z-index:100;
+  position:fixed;
+  width:100%;
+  height:100%;
+  background-color: rgba(255, 204, 0, 0.3);
+  backdrop-filter: blur(5px);
+}
+
+
+.closeLogin{
+  background-color:red;
+  padding:10px;
+  border-radius: 50%;
+  height:20px;
+  width:20px;
+}
+.closeLogin:hover{
+  cursor:pointer;
+  background: var(--schoolFill);
+}
+
+#loginModal-container{
+  position: absolute;
+  background-color:white;
+  border-radius: 20px;
 }
 
 body {
-  margin-bottom: 60px;
+  margin: 0;
+  padding:0;
+}
+
+table, th, td {
+  border: 1px solid black;
+}
+table{
+  margin:0;
+  padding:0;
+}
+.banner{
+  width: 100vw;
+}
+
+.popularButtons p{
+  display: inline;
+  color: red;
+}
+.popularButtons button{
+  cursor: pointer;
+  display: inline-block;
+  border: none;
+  background-color: none;
+  border-radius:10px;
+}
+
+.middleButtons p {
+  display: inline;
+  color: red;
+  text-align: center;
+  padding:10px;
+}
+.middleButtons button {
+  cursor: pointer;
+  border: none;
+  border-radius: 10px;
+}
+
+.popularButtons img{
+  height:120px;
+}
+.middleButtons, .popularButtons {
+  text-align: center;
+  justify-content: space-around;
+  padding:5px 10px 5px 10px;
+}
+
+button:hover {
+  transform: scale(1.1);
+  transition: transform 0.3s;
 }
