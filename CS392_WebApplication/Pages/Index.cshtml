@@ -18,7 +18,7 @@
         height:100%;
     }
     .banner{
-        width: 100vw;
+        width: 100%;
     }
    
     .popularButtons p{
@@ -59,62 +59,37 @@
         transition: transform 0.3s;
     }
 </style>
+<div class="container mt-4">
+    <img src="/images/TopBanner.png" class="banner mb-4" />
 
-<table>
-    <tr>
-        <td colspan="3">
-            <img src="/images/TopBanner.png" class="banner"/>
-        </td>
-    </tr>
+    <div class="middleButtons mb-3 text-center">
+        <button type="button"><p>Create a list</p></button>
+        <button type="button"><p>Shop by:</p></button>
+        <button type="button"><p>Bundles</p></button>
+    </div>
 
-    <tr>
-        <td colspan="3">
-            <div class="middleButtons">
-                <button type="button">
-                        <p>Create a list </p>
-                </button>   
-                <button type="button">
-                        <p> Shop by:</p>
-                </button>
-                <button type="button">
-                        <p>bundles</p>
-                </button>
-            </div>
-        </td>
-    </tr>
-    <tr>
-        <td>
-            <p style="text-align:center;"> Popular Items</p>
-        </td>
-    </tr>
-    <tr>
-         <td colspan="3">
-            <div class="popularButtons">
-                <button tpye="button"> 
-                    <img src="/images/calculator.png"/>
-                    <p>Caluclator</p>
-                </button>
+    <h4 class="text-center">Popular Items</h4>
 
-                <button tpye="button"> 
-                    <img src="/images/notebook.png" />
-                    <p>NoteBooks</p>
-                </button>
-
-                <button tpye="button"> 
-                    <img src="/images/pencil.png" />
-                    <p>Pencils</p>
-                </button>
-
-                <button tpye="button"> 
-                    <img src="/images/backpack.png" />
-                    <p>Backpacks</p>
-                </button>
-
-                <button tpye="button"> 
-                    <img src="/images/bottle.png" />
-                    <p>Bottles</p>
-                </button>
-            </div>
-         </td>
-    </tr>
-</table>
+    <div class="popularButtons d-flex flex-wrap justify-content-center gap-3">
+        <button type="button">
+            <img src="/images/calculator.png" />
+            <p>Calculator</p>
+        </button>
+        <button type="button">
+            <img src="/images/notebook.png" />
+            <p>Notebooks</p>
+        </button>
+        <button type="button">
+            <img src="/images/pencil.png" />
+            <p>Pencils</p>
+        </button>
+        <button type="button">
+            <img src="/images/backpack.png" />
+            <p>Backpacks</p>
+        </button>
+        <button type="button">
+            <img src="/images/bottle.png" />
+            <p>Bottles</p>
+        </button>
+    </div>
+</div>
