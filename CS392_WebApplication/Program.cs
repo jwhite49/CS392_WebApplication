@@ -32,6 +32,7 @@ builder.Services.AddRazorPages(options =>
 
 builder.Services.ConfigureApplicationCookie(options =>
 {
+    options.LoginPath = "/Index";
     options.AccessDeniedPath = "/Error";
 });
 
