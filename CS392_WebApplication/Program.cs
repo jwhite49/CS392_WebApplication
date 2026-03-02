@@ -28,6 +28,8 @@ builder.Services.AddControllersWithViews();
 builder.Services.AddRazorPages(options =>
 {
     options.Conventions.AuthorizeFolder("/");
+    options.Conventions.AllowAnonymousToFolder("/Product");
+    // Allowing anomynous access to product page
 });
 
 builder.Services.ConfigureApplicationCookie(options =>
