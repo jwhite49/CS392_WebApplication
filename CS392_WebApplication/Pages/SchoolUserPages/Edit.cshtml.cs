@@ -1,28 +1,26 @@
-﻿using CS392_WebApplication.Models;
-using Microsoft.AspNetCore.Authorization;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using CS392_WebApplication.Models;
 
-namespace CS392_WebApplication.Pages.ProductPages
+namespace CS392_WebApplication.Pages.SchoolUserPages
 {
-    [Authorize(Roles = "Admin")]
     public class EditModel : PageModel
     {
-        private readonly ProductsDbContext _context;
+        private readonly School_UserDbContext _context;
 
-        public EditModel(ProductsDbContext context)
+        public EditModel(School_UserDbContext context)
         {
             _context = context;
         }
 
         [BindProperty]
-        public Products Products { get; set; } = default!;
+        public School_User School_User { get; set; } = default!;
 
         public async Task<IActionResult> OnGetAsync(int? id)
         {
@@ -31,12 +29,12 @@ namespace CS392_WebApplication.Pages.ProductPages
                 return NotFound();
             }
 
-            var products =  await _context.Products.FirstOrDefaultAsync(m => m.product_ID == id);
-            if (products == null)
+            var school_user =  await _context.School_User.FirstOrDefaultAsync(m => m.userID == id);
+            if (school_user == null)
             {
                 return NotFound();
             }
-            Products = products;
+            School_User = school_user;
             return Page();
         }
 
@@ -49,7 +47,7 @@ namespace CS392_WebApplication.Pages.ProductPages
                 return Page();
             }
 
-            _context.Attach(Products).State = EntityState.Modified;
+            _context.Attach(School_User).State = EntityState.Modified;
 
             try
             {
@@ -57,7 +55,7 @@ namespace CS392_WebApplication.Pages.ProductPages
             }
             catch (DbUpdateConcurrencyException)
             {
-                if (!ProductsExists(Products.product_ID))
+                if (!School_UserExists(School_User.userID))
                 {
                     return NotFound();
                 }
@@ -70,9 +68,9 @@ namespace CS392_WebApplication.Pages.ProductPages
             return RedirectToPage("./Index");
         }
 
-        private bool ProductsExists(int id)
+        private bool School_UserExists(int id)
         {
-            return _context.Products.Any(e => e.product_ID == id);
+            return _context.School_User.Any(e => e.userID == id);
         }
     }
 }
