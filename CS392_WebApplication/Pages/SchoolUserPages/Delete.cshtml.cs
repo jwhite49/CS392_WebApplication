@@ -1,28 +1,25 @@
-﻿using CS392_WebApplication.Models;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.EntityFrameworkCore;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.EntityFrameworkCore;
+using CS392_WebApplication.Models;
 
-namespace CS392_WebApplication.Pages.ProductPages
+namespace CS392_WebApplication.Pages.SchoolUserPages
 {
-    [Authorize(Roles = "Admin")]
-
     public class DeleteModel : PageModel
     {
-        private readonly ProductsDbContext _context;
+        private readonly School_UserDbContext _context;
 
-        public DeleteModel(ProductsDbContext context)
+        public DeleteModel(School_UserDbContext context)
         {
             _context = context;
         }
 
         [BindProperty]
-        public Products Products { get; set; } = default!;
+        public School_User School_User { get; set; } = default!;
 
         public async Task<IActionResult> OnGetAsync(int? id)
         {
@@ -31,15 +28,15 @@ namespace CS392_WebApplication.Pages.ProductPages
                 return NotFound();
             }
 
-            var products = await _context.Products.FirstOrDefaultAsync(m => m.product_ID == id);
+            var school_user = await _context.School_User.FirstOrDefaultAsync(m => m.userID == id);
 
-            if (products == null)
+            if (school_user == null)
             {
                 return NotFound();
             }
             else
             {
-                Products = products;
+                School_User = school_user;
             }
             return Page();
         }
@@ -51,11 +48,11 @@ namespace CS392_WebApplication.Pages.ProductPages
                 return NotFound();
             }
 
-            var products = await _context.Products.FindAsync(id);
-            if (products != null)
+            var school_user = await _context.School_User.FindAsync(id);
+            if (school_user != null)
             {
-                Products = products;
-                _context.Products.Remove(Products);
+                School_User = school_user;
+                _context.School_User.Remove(School_User);
                 await _context.SaveChangesAsync();
             }
 

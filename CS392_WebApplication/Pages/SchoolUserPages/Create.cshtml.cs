@@ -6,16 +6,14 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using CS392_WebApplication.Models;
-using Microsoft.AspNetCore.Authorization;
 
-namespace CS392_WebApplication.Pages.ProductPages
+namespace CS392_WebApplication.Pages.SchoolUserPages
 {
-    [Authorize(Roles = "Admin")]
     public class CreateModel : PageModel
     {
-        private readonly ProductsDbContext _context;
+        private readonly School_UserDbContext _context;
 
-        public CreateModel(ProductsDbContext context)
+        public CreateModel(School_UserDbContext context)
         {
             _context = context;
         }
@@ -26,7 +24,7 @@ namespace CS392_WebApplication.Pages.ProductPages
         }
 
         [BindProperty]
-        public Products Products { get; set; } = default!;
+        public School_User School_User { get; set; } = default!;
 
         // For more information, see https://aka.ms/RazorPagesCRUD.
         public async Task<IActionResult> OnPostAsync()
@@ -36,7 +34,7 @@ namespace CS392_WebApplication.Pages.ProductPages
                 return Page();
             }
 
-            _context.Products.Add(Products);
+            _context.School_User.Add(School_User);
             await _context.SaveChangesAsync();
 
             return RedirectToPage("./Index");
