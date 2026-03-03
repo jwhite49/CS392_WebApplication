@@ -1,10 +1,11 @@
-﻿@page
+﻿@page "{category}"
 @model ProductListingModel
 @{
     ViewData["Title"] = "ProductListing";
 }
 
-<h1>Product Listing</h1>
+<h1>Product: @Model.Product.product_name</h1>
+<br />
 
 <div class="flex-container">
     <div class="item-smallPicture">
@@ -13,14 +14,16 @@
     </div>
     <div class="item-mainPicture">
         <h1> Product Information</h1>
-        <p> some placement for product information</p>
+        <p>
+            @Model.Product.product_name
+        </p>
     </div>
     <div class="item-description">
         <h1> Product description</h1>
-        <p> some placement for product description</p>
+        <p> @Model.Product.description</p>
     </div>
     <div class="item-otherSites">
         <h1> Other sites</h1>
-        <p> some placement for other sites</p>
+        <p> @Model.Product.retail_URL</p>
     </div>
 </div>

@@ -30,7 +30,7 @@ builder.Services.AddControllersWithViews();
 builder.Services.AddRazorPages(options =>
 {
     options.Conventions.AuthorizeFolder("/");
-    options.Conventions.AllowAnonymousToFolder("/Product");
+    options.Conventions.AllowAnonymousToFolder("/ProductPages/Listing");
     // Allowing anomynous access to product page
 });
 
