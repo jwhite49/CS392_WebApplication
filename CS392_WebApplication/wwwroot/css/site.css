@@ -93,11 +93,18 @@ table, th, td {
     }
     .item-mainPicture{
       flex-basis:40%; 
+      text-align: center;
+      padding: 10px;
     }
     .item-description{
       flex-basis:40%; 
+      text-align: center;
+      padding: 10px;
     }
     .item-otherSites{
       flex-basis:10%; 
       background-color: var(--schoolyellow);
+      text-align: center;
+      padding: 10px;
     }
+    
