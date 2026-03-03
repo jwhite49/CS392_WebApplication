@@ -33,7 +33,8 @@ builder.Services.AddRazorPages(options =>
 {
     options.Conventions.AuthorizeFolder("/");
     options.Conventions.AllowAnonymousToFolder("/ProductPages/Listing");
-    // Allowing anomynous access to product page
+    options.Conventions.AllowAnonymousToPage("/Lists/List");
+    // Allowing anonymous access to product page
 });
 
 builder.Services.ConfigureApplicationCookie(options =>
