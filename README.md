@@ -16,3 +16,7 @@ Being able to switch CRUD users - jordan
 
 Ideas: 
 Click button for search and display categories and etc.
+
+google login 
+shop293ify@gmail.com
+PW: shophtiw392!
