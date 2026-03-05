@@ -1,0 +1,60 @@
+﻿@page
+@model CS392_WebApplication.Pages.ProductPages.Catalog.IndexModel
+
+<h2 class="mb-4">Product Catalog</h2>
+
+<form method="get" class="mb-4 d-flex gap-3">
+
+    <input type="text"
+           name="Search"
+           value="@Model.Search"
+           class="form-control"
+           placeholder="Search products..." />
+
+    <select name="Sort" class="form-select" onchange="this.form.submit()">
+        <option value="">Sort By</option>
+        <option value="name_asc" selected="@(Model.Sort == "name_asc")">Name (A → Z)</option>
+        <option value="name_desc" selected="@(Model.Sort == "name_desc")">Name (Z → A)</option>
+        <option value="price_asc" selected="@(Model.Sort == "price_asc")">Price (Low → High)</option>
+        <option value="price_desc" selected="@(Model.Sort == "price_desc")">Price (High → Low)</option>
+    </select>
+
+    <button class="btn btn-primary" type="submit">Search</button>
+</form>
+
+<div class="row">
+    @foreach (var item in Model.Products)
+    {
+        <div class="col-md-4 mb-4">
+            <div class="card h-100 shadow-sm">
+
+                <div class="card-body">
+                    <h5 class="card-title">@item.product_name</h5>
+
+                    <p class="card-text text-muted">
+                        @item.description
+                    </p>
+
+                    <p class="fw-bold">
+                        Price: $@item.retail_price
+                    </p>
+
+                    <p>
+                        Bulk Availability:
+                        <span class="fw-semibold">
+                            @(item.bulk_availability ? "Available" : "Not Available")
+                        </span>
+                    </p>
+
+                    <a href="/ProductListing?id=@item.product_ID" class="btn btn-primary me-2">
+                        View Details
+                    </a>
+
+                    <a href="@item.retail_URL" target="_blank" class="btn btn-success">
+                        Buy on Amazon
+                    </a>
+                </div>
+            </div>
+        </div>
+    }
+</div>
