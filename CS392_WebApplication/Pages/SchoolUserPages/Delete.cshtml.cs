@@ -1,28 +1,25 @@
-﻿using CS392_WebApplication.Models;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.EntityFrameworkCore;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.EntityFrameworkCore;
+using CS392_WebApplication.Models;
 
-namespace CS392_WebApplication.Pages.UserPages
+namespace CS392_WebApplication.Pages.SchoolUserPages
 {
-    [Authorize(Roles = "Admin")]
-
     public class DeleteModel : PageModel
     {
-        private readonly UserDbContext _context;
+        private readonly School_UserDbContext _context;
 
-        public DeleteModel(UserDbContext context)
+        public DeleteModel(School_UserDbContext context)
         {
             _context = context;
         }
 
         [BindProperty]
-        public User User { get; set; } = default!;
+        public School_User School_User { get; set; } = default!;
 
         public async Task<IActionResult> OnGetAsync(int? id)
         {
@@ -31,15 +28,15 @@ namespace CS392_WebApplication.Pages.UserPages
                 return NotFound();
             }
 
-            var user = await _context.User.FirstOrDefaultAsync(m => m.UserID == id);
+            var school_user = await _context.School_User.FirstOrDefaultAsync(m => m.userID == id);
 
-            if (user == null)
+            if (school_user == null)
             {
                 return NotFound();
             }
             else
             {
-                User = user;
+                School_User = school_user;
             }
             return Page();
         }
@@ -51,11 +48,11 @@ namespace CS392_WebApplication.Pages.UserPages
                 return NotFound();
             }
 
-            var user = await _context.User.FindAsync(id);
-            if (user != null)
+            var school_user = await _context.School_User.FindAsync(id);
+            if (school_user != null)
             {
-                User = user;
-                _context.User.Remove(User);
+                School_User = school_user;
+                _context.School_User.Remove(School_User);
                 await _context.SaveChangesAsync();
             }
 

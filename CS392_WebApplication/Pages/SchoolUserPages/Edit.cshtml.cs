@@ -1,29 +1,26 @@
-﻿using CS392_WebApplication.Models;
-using Microsoft.AspNetCore.Authorization;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using CS392_WebApplication.Models;
 
-namespace CS392_WebApplication.Pages.UserPages
+namespace CS392_WebApplication.Pages.SchoolUserPages
 {
-    [Authorize(Roles = "Admin")]
-
     public class EditModel : PageModel
     {
-        private readonly UserDbContext _context;
+        private readonly School_UserDbContext _context;
 
-        public EditModel(UserDbContext context)
+        public EditModel(School_UserDbContext context)
         {
             _context = context;
         }
 
         [BindProperty]
-        public User User { get; set; } = default!;
+        public School_User School_User { get; set; } = default!;
 
         public async Task<IActionResult> OnGetAsync(int? id)
         {
@@ -32,12 +29,12 @@ namespace CS392_WebApplication.Pages.UserPages
                 return NotFound();
             }
 
-            var user =  await _context.User.FirstOrDefaultAsync(m => m.UserID == id);
-            if (user == null)
+            var school_user =  await _context.School_User.FirstOrDefaultAsync(m => m.userID == id);
+            if (school_user == null)
             {
                 return NotFound();
             }
-            User = user;
+            School_User = school_user;
             return Page();
         }
 
@@ -50,7 +47,7 @@ namespace CS392_WebApplication.Pages.UserPages
                 return Page();
             }
 
-            _context.Attach(User).State = EntityState.Modified;
+            _context.Attach(School_User).State = EntityState.Modified;
 
             try
             {
@@ -58,7 +55,7 @@ namespace CS392_WebApplication.Pages.UserPages
             }
             catch (DbUpdateConcurrencyException)
             {
-                if (!UserExists(User.UserID))
+                if (!School_UserExists(School_User.userID))
                 {
                     return NotFound();
                 }
@@ -71,9 +68,9 @@ namespace CS392_WebApplication.Pages.UserPages
             return RedirectToPage("./Index");
         }
 
-        private bool UserExists(int id)
+        private bool School_UserExists(int id)
         {
-            return _context.User.Any(e => e.UserID == id);
+            return _context.School_User.Any(e => e.userID == id);
         }
     }
 }

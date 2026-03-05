@@ -1,0 +1,38 @@
+﻿@page
+@model ListModel
+@{
+    ViewData["Title"] = "List";
+}
+
+
+
+@if(User.Identity.IsAuthenticated)
+{
+    <table>
+    <tr>
+        <th>Name</th>
+        <th>Description</th>
+        <th>Source</th>
+        <th>Price</th>
+    </tr>
+    <tr>
+        <td>
+            <p>Calculator</p>
+        </td>
+        <td>
+            <p>graphing calculator</p>
+        </td>
+        <td>
+            <p>amazon.com</p>
+        </td>
+        <td>
+            <p>$145</p>
+        </td>
+    </tr>
+</table>
+}
+else
+{
+    <p>Please log in to view your lists.</p>
+}
+

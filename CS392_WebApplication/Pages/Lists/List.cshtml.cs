@@ -3,13 +3,12 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Authorization;
 namespace CS392_WebApplication.Pages
 {
-    [AllowAnonymous]
 
-    public class IndexModel : PageModel
+    public class ListModel : PageModel
     {
-        private readonly ILogger<IndexModel> _logger;
+        private readonly ILogger<ListModel> _logger;
 
-        public IndexModel(ILogger<IndexModel> logger)
+        public ListModel(ILogger<ListModel> logger)
         {
             _logger = logger;
         }

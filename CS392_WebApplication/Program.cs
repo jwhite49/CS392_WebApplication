@@ -1,3 +1,4 @@
+using CS392_WebApplication.Constants;
 using CS392_WebApplication.Data;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -21,10 +22,30 @@ builder.Services.AddIdentity<IdentityUser, IdentityRole>(options =>
 // Add framework services.
 builder.Services.AddRazorPages();
 builder.Services.AddDbContext<UserDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("UserDbContext") ?? throw new InvalidOperationException("Connection string 'UserDbContext' not found.")));
+    options.UseSqlServer(builder.Configuration.GetConnectionString("ApplicationDbContext") ?? throw new InvalidOperationException("Connection string 'UserDbContext' not found.")));
+builder.Services.AddDbContext<ProductsDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("ApplicationDbContext") ?? throw new InvalidOperationException("Connection string 'ProductsDbContext' not found.")));
+builder.Services.AddDbContext<School_UserDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("ApplicationDbContext") ?? throw new InvalidOperationException("Connection string 'School_UserDbContext' not found.")));
 builder.Services.AddControllersWithViews();
 
+builder.Services.AddRazorPages(options =>
+{
+    options.Conventions.AuthorizeFolder("/");
+    options.Conventions.AllowAnonymousToFolder("/ProductPages/Listing");
+    options.Conventions.AllowAnonymousToPage("/Lists/List");
+    // Allowing anonymous access to product page
+});
+
+builder.Services.ConfigureApplicationCookie(options =>
+{
+    options.LoginPath = "/Index";
+    options.AccessDeniedPath = "/Error";
+});
+
 var app = builder.Build();
+
+
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
@@ -42,6 +63,7 @@ app.UseAuthentication(); // required before Authorization
 app.UseAuthorization();
 
 app.MapRazorPages();
+
 
 using (var scope = app.Services.CreateScope())
 {

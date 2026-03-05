@@ -8,24 +8,23 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace CS392_WebApplication.Pages.UserPages
+namespace CS392_WebApplication.Pages.ProductPages
 {
     [Authorize(Roles = "Admin")]
-
     public class IndexModel : PageModel
     {
-        private readonly UserDbContext _context;
+        private readonly ProductsDbContext _context;
 
-        public IndexModel(UserDbContext context)
+        public IndexModel(ProductsDbContext context)
         {
             _context = context;
         }
 
-        public IList<User> User { get;set; } = default!;
+        public IList<Products> Products { get;set; } = default!;
 
         public async Task OnGetAsync()
         {
-            User = await _context.User.ToListAsync();
+            Products = await _context.Products.ToListAsync();
         }
     }
 }

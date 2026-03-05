@@ -1,0 +1,31 @@
+﻿@page
+@model CS392_WebApplication.Pages.SchoolUserPages.DetailsModel
+
+@{
+    ViewData["Title"] = "Details";
+}
+
+<h1>Details</h1>
+
+<div>
+    <h4>School_User</h4>
+    <hr />
+    <dl class="row">
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.School_User.school_name)
+        </dt>
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.School_User.school_name)
+        </dd>
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.School_User.is_approved)
+        </dt>
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.School_User.is_approved)
+        </dd>
+    </dl>
+</div>
+<div>
+    <a asp-page="./Edit" asp-route-id="@Model.School_User.userID">Edit</a> |
+    <a asp-page="./Index">Back to List</a>
+</div>

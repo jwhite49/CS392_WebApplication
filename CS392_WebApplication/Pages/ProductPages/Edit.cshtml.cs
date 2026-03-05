@@ -9,21 +9,20 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace CS392_WebApplication.Pages.UserPages
+namespace CS392_WebApplication.Pages.ProductPages
 {
     [Authorize(Roles = "Admin")]
-
     public class EditModel : PageModel
     {
-        private readonly UserDbContext _context;
+        private readonly ProductsDbContext _context;
 
-        public EditModel(UserDbContext context)
+        public EditModel(ProductsDbContext context)
         {
             _context = context;
         }
 
         [BindProperty]
-        public User User { get; set; } = default!;
+        public Products Products { get; set; } = default!;
 
         public async Task<IActionResult> OnGetAsync(int? id)
         {
@@ -32,12 +31,12 @@ namespace CS392_WebApplication.Pages.UserPages
                 return NotFound();
             }
 
-            var user =  await _context.User.FirstOrDefaultAsync(m => m.UserID == id);
-            if (user == null)
+            var products =  await _context.Products.FirstOrDefaultAsync(m => m.product_ID == id);
+            if (products == null)
             {
                 return NotFound();
             }
-            User = user;
+            Products = products;
             return Page();
         }
 
@@ -50,7 +49,7 @@ namespace CS392_WebApplication.Pages.UserPages
                 return Page();
             }
 
-            _context.Attach(User).State = EntityState.Modified;
+            _context.Attach(Products).State = EntityState.Modified;
 
             try
             {
@@ -58,7 +57,7 @@ namespace CS392_WebApplication.Pages.UserPages
             }
             catch (DbUpdateConcurrencyException)
             {
-                if (!UserExists(User.UserID))
+                if (!ProductsExists(Products.product_ID))
                 {
                     return NotFound();
                 }
@@ -71,9 +70,9 @@ namespace CS392_WebApplication.Pages.UserPages
             return RedirectToPage("./Index");
         }
 
-        private bool UserExists(int id)
+        private bool ProductsExists(int id)
         {
-            return _context.User.Any(e => e.UserID == id);
+            return _context.Products.Any(e => e.product_ID == id);
         }
     }
 }

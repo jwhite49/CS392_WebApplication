@@ -1,22 +1,19 @@
-﻿using CS392_WebApplication.Models;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.AspNetCore.Mvc.Rendering;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using CS392_WebApplication.Models;
 
-namespace CS392_WebApplication.Pages.UserPages
+namespace CS392_WebApplication.Pages.SchoolUserPages
 {
-    [Authorize(Roles = "Admin")]
-
     public class CreateModel : PageModel
     {
-        private readonly UserDbContext _context;
+        private readonly School_UserDbContext _context;
 
-        public CreateModel(UserDbContext context)
+        public CreateModel(School_UserDbContext context)
         {
             _context = context;
         }
@@ -27,7 +24,7 @@ namespace CS392_WebApplication.Pages.UserPages
         }
 
         [BindProperty]
-        public User User { get; set; } = default!;
+        public School_User School_User { get; set; } = default!;
 
         // For more information, see https://aka.ms/RazorPagesCRUD.
         public async Task<IActionResult> OnPostAsync()
@@ -37,7 +34,7 @@ namespace CS392_WebApplication.Pages.UserPages
                 return Page();
             }
 
-            _context.User.Add(User);
+            _context.School_User.Add(School_User);
             await _context.SaveChangesAsync();
 
             return RedirectToPage("./Index");

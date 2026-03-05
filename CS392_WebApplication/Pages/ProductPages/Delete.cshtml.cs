@@ -8,21 +8,21 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace CS392_WebApplication.Pages.UserPages
+namespace CS392_WebApplication.Pages.ProductPages
 {
     [Authorize(Roles = "Admin")]
 
     public class DeleteModel : PageModel
     {
-        private readonly UserDbContext _context;
+        private readonly ProductsDbContext _context;
 
-        public DeleteModel(UserDbContext context)
+        public DeleteModel(ProductsDbContext context)
         {
             _context = context;
         }
 
         [BindProperty]
-        public User User { get; set; } = default!;
+        public Products Products { get; set; } = default!;
 
         public async Task<IActionResult> OnGetAsync(int? id)
         {
@@ -31,15 +31,15 @@ namespace CS392_WebApplication.Pages.UserPages
                 return NotFound();
             }
 
-            var user = await _context.User.FirstOrDefaultAsync(m => m.UserID == id);
+            var products = await _context.Products.FirstOrDefaultAsync(m => m.product_ID == id);
 
-            if (user == null)
+            if (products == null)
             {
                 return NotFound();
             }
             else
             {
-                User = user;
+                Products = products;
             }
             return Page();
         }
@@ -51,11 +51,11 @@ namespace CS392_WebApplication.Pages.UserPages
                 return NotFound();
             }
 
-            var user = await _context.User.FindAsync(id);
-            if (user != null)
+            var products = await _context.Products.FindAsync(id);
+            if (products != null)
             {
-                User = user;
-                _context.User.Remove(User);
+                Products = products;
+                _context.Products.Remove(Products);
                 await _context.SaveChangesAsync();
             }
 

@@ -8,20 +8,20 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace CS392_WebApplication.Pages.UserPages
+namespace CS392_WebApplication.Pages.ProductPages
 {
     [Authorize(Roles = "Admin")]
 
     public class DetailsModel : PageModel
     {
-        private readonly UserDbContext _context;
+        private readonly ProductsDbContext _context;
 
-        public DetailsModel(UserDbContext context)
+        public DetailsModel(ProductsDbContext context)
         {
             _context = context;
         }
 
-        public User User { get; set; } = default!;
+        public Products Products { get; set; } = default!;
 
         public async Task<IActionResult> OnGetAsync(int? id)
         {
@@ -30,14 +30,14 @@ namespace CS392_WebApplication.Pages.UserPages
                 return NotFound();
             }
 
-            var user = await _context.User.FirstOrDefaultAsync(m => m.UserID == id);
-            if (user == null)
+            var products = await _context.Products.FirstOrDefaultAsync(m => m.product_ID == id);
+            if (products == null)
             {
                 return NotFound();
             }
             else
             {
-                User = user;
+                Products = products;
             }
             return Page();
         }
