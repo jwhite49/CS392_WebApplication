@@ -2,59 +2,181 @@
 @model CS392_WebApplication.Pages.ProductPages.Catalog.IndexModel
 
 <h2 class="mb-4">Product Catalog</h2>
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="mb-3 d-flex flex-wrap gap-3 align-items-center">
+    
+            <!-- Search input -->
+            <input type="text"
+                   name="Search"
+                   value="@Model.Search"
+                   class="form-control"
+                   style="max-widt  h: 280px;"
+                   placeholder="Search products..." />
 
-<form method="get" class="mb-4 d-flex gap-3">
+            <!-- Search button -->
+            <button class="btn btn-primary" type="submit">
+                Search
+            </button>
 
-    <input type="text"
-           name="Search"
-           value="@Model.Search"
-           class="form-control"
-           placeholder="Search products..." />
+            <!-- Clear ONLY search (keeps Sort, resets to page 1) -->
+            <a href="?Sort=@Model.Sort&pageNumber=1"
+               class="btn btn-outline-secondary">
+                Clear Search
+            </a>
 
-    <select name="Sort" class="form-select" onchange="this.form.submit()">
-        <option value="">Sort By</option>
-        <option value="name_asc" selected="@(Model.Sort == "name_asc")">Name (A → Z)</option>
-        <option value="name_desc" selected="@(Model.Sort == "name_desc")">Name (Z → A)</option>
-        <option value="price_asc" selected="@(Model.Sort == "price_asc")">Price (Low → High)</option>
-        <option value="price_desc" selected="@(Model.Sort == "price_desc")">Price (High → Low)</option>
-    </select>
+            <!-- Sort dropdown -->
+            <select name="Sort"
+                    class="form-select"
+                    style="max-width: 220px;"
+                    onchange="this.form.submit()">
+                <option value="">Sort By</option>
+                <option value="name_asc" selected="@(Model.Sort == "name_asc")">Name (A → Z)</option>
+                <option value="name_desc" selected="@(Model.Sort == "name_desc")">Name (Z → A)</option>
+                <option value="price_asc" selected="@(Model.Sort == "price_asc")">Price (Low → High)</option>
+                <option value="price_desc" selected="@(Model.Sort == "price_desc")">Price (High → Low)</option>
+            </select>
 
-    <button class="btn btn-primary" type="submit">Search</button>
-</form>
+            <!-- Reset ONLY sort (keeps Search, resets to page 1) -->
+            <a href="?Search=@Model.Search&pageNumber=1"
+               class="btn btn-outline-secondary">
+                Reset Sort
+            </a>
 
-<div class="row">
-    @foreach (var item in Model.Products)
+        </form>
+    </div>
+</div>
+@{
+    string sortLabel =
+        Model.Sort == "name_asc" ? "Name (A → Z)" :
+        Model.Sort == "name_desc" ? "Name (Z → A)" :
+        Model.Sort == "price_asc" ? "Price (Low → High)" :
+        Model.Sort == "price_desc" ? "Price (High → Low)" :
+        "Default";
+}
+@* “Showing X–Y of Z results” *@
+@{
+    int startItem = 0;
+    int endItem = 0;
+
+    if (Model.TotalItems > 0)
     {
-        <div class="col-md-4 mb-4">
-            <div class="card h-100 shadow-sm">
+        startItem = (Model.PageNumber - 1) * Model.PageSize + 1;
+        endItem = Math.Min(Model.PageNumber * Model.PageSize, Model.TotalItems);
+    }
+}
 
-                <div class="card-body">
-                    <h5 class="card-title">@item.product_name</h5>
+@if (Model.TotalItems > 0 && (!string.IsNullOrWhiteSpace(Model.Search) || !string.IsNullOrWhiteSpace(Model.Sort)))
+{
+    <p class="text-muted mb-1">
+        Showing @startItem–@endItem of @Model.TotalItems results
+        @if (!string.IsNullOrWhiteSpace(Model.Search))
+        {
+            <span> for "<strong>@Model.Search</strong>"</span>
+        }
+        @if (!string.IsNullOrWhiteSpace(Model.Sort))
+        {
+            <span>
+                @if (!string.IsNullOrWhiteSpace(Model.Search))
+                {
+                    @: ,&nbsp;
+                }
+                sorted by <strong>@sortLabel</strong>
+            </span>
+        }
+    </p>
+}
 
-                    <p class="card-text text-muted">
-                        @item.description
-                    </p>
+else if (Model.TotalItems > 0)
+{
+    <p class="text-muted mb-1">
+        Showing @startItem–@endItem of @Model.TotalItems results
+    </p>
+}
 
-                    <p class="fw-bold">
-                        Price: $@item.retail_price
-                    </p>
 
-                    <p>
-                        Bulk Availability:
-                        <span class="fw-semibold">
-                            @(item.bulk_availability ? "Available" : "Not Available")
-                        </span>
-                    </p>
 
-                    <a href="/ProductListing?id=@item.product_ID" class="btn btn-primary me-2">
-                        View Details
-                    </a>
 
-                    <a href="@item.retail_URL" target="_blank" class="btn btn-success">
-                        Buy on Amazon
-                    </a>
+
+@if (!Model.Products.Any())
+{
+    <p class="text-muted mt-3">
+        No products match your search or filters.
+    </p>
+}
+else
+{
+    <div class="row">
+        @foreach (var item in Model.Products)
+        {
+            <div class="col-md-4 mb-4">
+                <div class="card h-100 shadow-sm product-card" onclick="window.location='/ProductPages/Listing/ProductListing/@item.product_name'">
+                    <div class="card-body">
+                        <h5 class="card-title">@item.product_name</h5>
+
+                        <p class="card-text text-muted">
+                            @item.description
+                        </p>
+
+                        <p class="fw-bold">
+                            Price: $@item.retail_price
+                        </p>
+
+                        <p>
+                            Bulk Availability:
+                            <span class="fw-semibold">
+                                @(item.bulk_availability ? "Available" : "Not Available")
+                            </span>
+                        </p>
+
+                        <div class="d-flex flex-wrap gap-2 mt-3">
+                            <a href="/ProductPages/Listing/ProductListing/@item.product_name" class="btn btn-primary">
+                                View Details
+                            </a>
+
+                            <a href="@item.retail_URL" target="_blank" class="btn btn-success">
+                                Buy on Amazon
+                            </a>
+
+                            <a href="#" class="btn btn-warning">
+                                Add to List
+                            </a>
+                        </div>
+                    </div>
                 </div>
             </div>
-        </div>
+        }
+    </div>
+
+    @if (Model.TotalPages > 1)
+    {
+        <nav aria-label="Product catalog pages">
+            <ul class="pagination justify-content-center mt-4">
+                <li class="page-item @(Model.PageNumber <= 1 ? "disabled" : "")">
+                    <a class="page-link"
+                       href="?Search=@Model.Search&Sort=@Model.Sort&pageNumber=@(Model.PageNumber - 1)">
+                        Previous
+                    </a>
+                </li>
+
+                @for (int i = 1; i <= Model.TotalPages; i++)
+                {
+                    <li class="page-item @(i == Model.PageNumber ? "active" : "")">
+                        <a class="page-link"
+                           href="?Search=@Model.Search&Sort=@Model.Sort&pageNumber=@i">
+                            @i
+                        </a>
+                    </li>
+                }
+
+                <li class="page-item @(Model.PageNumber >= Model.TotalPages ? "disabled" : "")">
+                    <a class="page-link"
+                       href="?Search=@Model.Search&Sort=@Model.Sort&pageNumber=@(Model.PageNumber + 1)">
+                        Next
+                    </a>
+                </li>
+            </ul>
+        </nav>
     }
-</div>
+}
+
