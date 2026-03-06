@@ -12,4 +12,6 @@ using CS392_WebApplication.Models;
         {
         }
         public DbSet<CS392_WebApplication.Models.Products> Products { get; set; } = default!;
-    }
+        public DbSet<Product_list> Product_list { get; set; }
+
+}

@@ -1,17 +1,28 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using Microsoft.EntityFrameworkCore.Migrations;
 
 namespace CS392_WebApplication.Models
 {
     public class Product_list
     {
-        [Key] public int list_ID { get; set; }
-        [ForeignKey("User")] public int user_ID { get; set; }
-        [Required] public float total_price { get; set; }
-        [Required] public string list_type { get; set; }
-        //whether list type is for user / school 
-        //could possibly chage it to bool, false for schoool , true for user 
-        public string amazon_wishlist_url { get; set; }
-        [Required] public DateTime created_at { get; set; }
+        [Key]
+        [Column("listID")]
+        public int listID { get; set; }
+        [Column("userID")]
+        public int userID { get; set; }
+        [Column("total_price")]
+        public double total_price { get; set; }
+        [Column("list_type")]
+        public ListType list_type { get; set; }  // enum
+        [Column("created_at")]
+        public DateTime created_at { get; set; }
     }
+
+    public enum ListType
+    {
+        User = 0,
+        School = 1
+    }
+
 }

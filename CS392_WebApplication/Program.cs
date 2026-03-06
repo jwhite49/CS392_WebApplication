@@ -27,6 +27,8 @@ builder.Services.AddDbContext<ProductsDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("ApplicationDbContext") ?? throw new InvalidOperationException("Connection string 'ProductsDbContext' not found.")));
 builder.Services.AddDbContext<School_UserDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("ApplicationDbContext") ?? throw new InvalidOperationException("Connection string 'School_UserDbContext' not found.")));
+builder.Services.AddDbContext<Product_listDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("ApplicationDbContext") ?? throw new InvalidOperationException("Connection string 'Product_listDbContext' not found.")));
 builder.Services.AddControllersWithViews();
 
 builder.Services.AddRazorPages(options =>
