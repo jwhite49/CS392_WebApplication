@@ -15,5 +15,6 @@ namespace CS392_WebApplication.Data
         }
 
         public DbSet<CS392_WebApplication.Models.User> User { get; set; } = default!;
+        public DbSet<CS392_WebApplication.Models.Products> Products { get; set; } = default!;
     }
 }

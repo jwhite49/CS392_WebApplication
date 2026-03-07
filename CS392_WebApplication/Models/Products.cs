@@ -33,5 +33,9 @@ namespace CS392_WebApplication.Models
 
         public bool bulk_availability { get; set; }
 
+        [Column("ImageURL")]
+        public string? ImageURL { get; set; }
+        public DateTime IntoSystemAt { get; set; }
+
     }
 }
