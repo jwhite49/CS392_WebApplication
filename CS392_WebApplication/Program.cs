@@ -3,6 +3,8 @@ using CS392_WebApplication.Data;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using CS392_WebApplication.Services;
+using CS392_WebApplication.API;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -30,6 +32,11 @@ builder.Services.AddDbContext<School_UserDbContext>(options =>
 builder.Services.AddDbContext<Product_listDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("ApplicationDbContext") ?? throw new InvalidOperationException("Connection string 'Product_listDbContext' not found.")));
 builder.Services.AddControllersWithViews();
+
+builder.Services.AddScoped<apiConfig>();
+builder.Services.AddScoped<ProductService>();
+//If APIController needs ProductService
+//→ create one and pass it in
 
 builder.Services.AddRazorPages(options =>
 {
@@ -65,6 +72,7 @@ app.UseAuthentication(); // required before Authorization
 app.UseAuthorization();
 
 app.MapRazorPages();
+app.MapControllers();
 
 
 using (var scope = app.Services.CreateScope())

@@ -19,13 +19,15 @@ namespace CS392_WebApplication.API
             Hashtable ht = new Hashtable();
             ht.Add("engine", "google_shopping"); //search engine
             ht.Add("q", query); //search query 
-            //ht.Add("location", "Austin, Texas, United States"); //location for localized results
-            //ht.Add("google_domain", "google.com"); //google domain 
             ht.Add("gl", "us"); //country
             ht.Add("hl", "en"); //language
             //ht.Add is parameters that tell API
             // what kind of search to run
             //EX: ht.Add("ParamterName", "ParameterValue");
+            //Other examples 
+            //ht.Add("location", "Austin, Texas, United States"); //location for localized results
+            //ht.Add("google_domain", "google.com"); //google domain 
+
             JObject data = null;
             JArray results = null;
             try

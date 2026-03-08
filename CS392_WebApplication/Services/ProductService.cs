@@ -11,10 +11,10 @@ namespace CS392_WebApplication.Services
 {
     public class ProductService
     {
-        private readonly ApplicationDbContext _context; //database field
+        private readonly ProductsDbContext _context; //database field
         private readonly apiConfig _serpApiService; // api service field
 
-        public ProductService(ApplicationDbContext context, apiConfig serpApiService)
+        public ProductService(ProductsDbContext context, apiConfig serpApiService)
         {
             _context = context;
             _serpApiService = serpApiService;
@@ -34,21 +34,23 @@ namespace CS392_WebApplication.Services
                     retail_URL = result["link"]?.ToString(),
                     ImageURL = result["thumbnail"]?.ToString(),
                     IntoSystemAt = DateTime.Now
-
-
                 };
-                if(decimal.TryParse(result["price"]?.ToString()?.Replace("$",""), out decimal price)) 
-                product.retail_price=price;
-                //converts price from ("$20.99") -> (20.99)
-                // remove $, try convert to decimal, store in price 
+                if(double.TryParse(result["price"]?.ToString()?.Replace("$",""), out double retailPrice)) 
+                { 
+                    product.retail_price=retailPrice;
+                    //converts price from ("$20.99") -> (20.99)
+                    //remove $, try convert to decimal, store in price field, if conversion fails price is set to 0
+                }
+                 else
+                {
+                    product.retail_price = 0; //default price if conversion fails
+                }   
                 products.Add(product); //add converted product to list
-
             }
-            _context.Product.AddRange(products); // add all products to database, not saved yet 
+            _context.Products.AddRange(products); // add all products to database, not saved yet 
             await _context.SaveChangesAsync(); //save changes to database, now products are stored in DB, executes sql line
+            // await allows the database operation to run asynchronously
             return products; //returns saved products back to controller
-
-
         }
     }
 }
