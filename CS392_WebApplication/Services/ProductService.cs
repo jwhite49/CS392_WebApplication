@@ -33,7 +33,6 @@ namespace CS392_WebApplication.Services
                     description = result["description"]?.ToString(),
                     retail_URL = result["link"]?.ToString(),
                     ImageURL = result["thumbnail"]?.ToString(),
-                    IntoSystemAt = DateTime.Now
                 };
                 if(double.TryParse(result["price"]?.ToString()?.Replace("$",""), out double retailPrice)) 
                 { 

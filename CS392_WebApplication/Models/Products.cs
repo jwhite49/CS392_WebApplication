@@ -35,7 +35,6 @@ namespace CS392_WebApplication.Models
 
         [Column("ImageURL")]
         public string? ImageURL { get; set; }
-        public DateTime IntoSystemAt { get; set; }
 
     }
 }

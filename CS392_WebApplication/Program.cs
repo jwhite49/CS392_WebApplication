@@ -16,13 +16,12 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 //builder.Services.AddDefaultIdentity<IdentityUser>(options => options.SignIn.RequireConfirmedAccount = true).AddEntityFrameworkStores<ApplicationDbContext>();
 
 builder.Services.AddIdentity<IdentityUser, IdentityRole>(options =>
-    options.SignIn.RequireConfirmedAccount = true)
+    options.SignIn.RequireConfirmedAccount = false)
     .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddDefaultUI()
     .AddDefaultTokenProviders();
 
 // Add framework services.
-builder.Services.AddRazorPages();
 builder.Services.AddDbContext<UserDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("ApplicationDbContext") ?? throw new InvalidOperationException("Connection string 'UserDbContext' not found.")));
 builder.Services.AddDbContext<ProductsDbContext>(options =>
@@ -41,14 +40,17 @@ builder.Services.AddScoped<ProductService>();
 builder.Services.AddRazorPages(options =>
 {
     options.Conventions.AuthorizeFolder("/");
+    options.Conventions.AllowAnonymousToPage("/Index");
+    options.Conventions.AllowAnonymousToPage("/Privacy");
+    options.Conventions.AllowAnonymousToFolder("/ProductPages/Catalog");
     options.Conventions.AllowAnonymousToFolder("/ProductPages/Listing");
     options.Conventions.AllowAnonymousToPage("/Lists/List");
-    // Allowing anonymous access to product page
+    // Allowing anonymous access to public pages
 });
 
 builder.Services.ConfigureApplicationCookie(options =>
 {
-    options.LoginPath = "/Index";
+    options.LoginPath = "/Identity/Account/Login";
     options.AccessDeniedPath = "/Error";
 });
 
