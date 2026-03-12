@@ -1,18 +1,28 @@
 using CS392_WebApplication.Data;
 using CS392_WebApplication.Models;
+using CS392_WebApplication.API;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Identity.Client;
+using SerpApi;
+using Newtonsoft.Json.Linq;
+
 
 namespace CS392_WebApplication.Pages.ProductPages.Catalog
 {
     public class IndexModel : PageModel
     {
         private readonly ProductsDbContext _context;
+        private readonly apiConfig _serpApiService; // api service field
+        private readonly catalogListModel allowedSearches; 
+        //pulls search data from other page
+
         
-        public IndexModel(ProductsDbContext context)
+        public IndexModel(ProductsDbContext context, apiConfig serpApiService)
         {
             _context = context;
+            _serpApiService = serpApiService;
         }
 
         public IList<Products> Products { get; set; }
@@ -32,6 +42,56 @@ namespace CS392_WebApplication.Pages.ProductPages.Catalog
 
         public async Task OnGetAsync()
         {
+
+            var apiProducts = new List<Products>();
+
+            bool searchMatch = catalogListModel.AllowedSearches.Any(s => 
+            Search != null && (
+                Search.Contains(s, StringComparison.OrdinalIgnoreCase) ||
+                s.Contains(Search, StringComparison.OrdinalIgnoreCase)
+            ));
+           //pulls search match from catalogList and checks if filtered search matches user search
+           //This limits user searching up explicit items and saving into DB
+
+            if (!string.IsNullOrEmpty(Search) && searchMatch)
+            {
+                var results = _serpApiService.SearchProducts(Search); //calls serp api 
+                
+                //currently works and displays results in console, next step is to save results to DB and display on frontend
+                var resultLimit = 0;
+                foreach (JObject result in results?? new JArray())
+                {
+                    if(resultLimit >= 20)
+                    {
+                       break; //limit to 15 results to prevent overloading DB, can be adjusted as needed
+                    } 
+                var product = new Products //convert json to product object
+                {
+                    product_name = result["title"]?.ToString()?[..Math.Min(result["title"]?.ToString()?.Length ?? 0, 50)] ?? "",
+                    description = result["snippet"]?.ToString() ?? "",
+                    retail_URL = result["link"]?.ToString() ?? "",
+                    ImageURL = result["thumbnail"]?.ToString() ?? "",
+                };  
+                if(double.TryParse(result["price"]?.ToString()?.Replace("$",""), out double retailPrice)) 
+                { 
+                    product.retail_price=retailPrice;
+                    //converts price from ("$20.99") -> (20.99)
+                    //remove $, try convert to decimal, store in price field, if conversion fails price is set to 0
+                }
+                 else
+                {
+                    product.retail_price = 0; //default price if conversion fails
+                }   
+                apiProducts.Add(product); //add converted product to list
+                //loop extracts each result
+                resultLimit++;
+                }
+                //saves info after the loop iteration, API gets results into db then application picks up results
+            _context.Products.AddRange(apiProducts); // add all products to database, not saved yet 
+            await _context.SaveChangesAsync(); //save changes to database, now products are stored in DB, executes sql line
+            }
+            
+
             var query = _context.Products.AsQueryable();
 
             // Search filter for search bar
@@ -74,12 +134,18 @@ namespace CS392_WebApplication.Pages.ProductPages.Catalog
                 PageNumber = TotalPages;
             }
 
+            
+
             //  Apply pagination
             Products = await query
                 .Skip((PageNumber - 1) * PageSize)
                 .Take(PageSize)
                 .ToListAsync();
-        }
 
+            //api
+            
+            
+            
+        }
     }
 }

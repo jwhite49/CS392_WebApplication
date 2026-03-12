@@ -14,6 +14,7 @@ namespace CS392_WebApplication.API
     {
         public JArray SearchProducts(string query)
         {
+            Console.WriteLine("[SearchProducts] Called with query: " + query);
             String apiKey = "de03a78be02d283d9baed511d2e0e45f94c7219b695d180bb97e24a6adbdecdb";
 
             Hashtable ht = new Hashtable();
@@ -35,14 +36,15 @@ namespace CS392_WebApplication.API
                 GoogleSearch search = new GoogleSearch(ht, apiKey); //create search object with parameters and API key
                 data = search.GetJson(); //sends request and returns response in JSON format
                 results = (JArray)data["shopping_results"]; //reads results
+                Console.WriteLine("[SearchProducts] Result count: " + (results?.Count ?? 0));
 
-                foreach (JObject result in results)
+                foreach (JObject result in results ?? new JArray())
                 {
-                    Console.WriteLine("Found: " + result["title"]);
-                    Console.WriteLine(result["title"]);                    
-                    Console.WriteLine(result["price"]);
-                    Console.WriteLine(result["link"]);
-                    Console.WriteLine(result["thumbnail"]);
+                    var found = ("Found: " + result["title"]);
+                    var title = (result["title"]);                    
+                    var price = (result["price"]);
+                    var link = (result["link"]);
+                    var image = (result["thumbnail"]);
                     //loop extracts each result
                 }
             }
