@@ -1,0 +1,148 @@
+﻿@page
+@model CS392_WebApplication.Pages.Admin.SystemLogs.IndexModel
+@{
+    ViewData["Title"] = "System Logs";
+}
+
+<h2 class="mb-4">System Logs</h2>
+<a class="btn btn-danger mb-3" href="/Admin/SystemLogs/TestException">
+    Trigger Test Exception
+</a>
+
+<div class="card mb-4">
+    <div class="card-header">
+        <strong>Filters</strong>
+    </div>
+
+    <div class="card-body">
+        <form method="get" class="row g-3">
+
+            <div class="col-md-3">
+                <label class="form-label">Severity</label>
+                <select class="form-select" asp-for="Level">
+                    <option value="">All</option>
+                    <option>Information</option>
+                    <option>Warning</option>
+                    <option>Error</option>
+                    <option>Critical</option>
+                </select>
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">Event Type</label>
+                <select class="form-select" asp-for="EventType">
+                    <option value="">All</option>
+                    <option>Exception</option>
+                    <option>FailedLogin</option>
+                    <option>RoleChange</option>
+                    <option>AccountChange</option>
+                </select>
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">User ID</label>
+                <input class="form-control" asp-for="UserId" />
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">Target User ID</label>
+                <input class="form-control" asp-for="TargetUserId" />
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">Page</label>
+                <input class="form-control" asp-for="PageFilter" />
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">Start Date</label>
+                <input type="date" class="form-control" asp-for="StartDate" />
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">End Date</label>
+                <input type="date" class="form-control" asp-for="EndDate" />
+            </div>
+
+            <div class="col-md-12">
+                <button class="btn btn-primary mt-2">Apply Filters</button>
+                <a href="/Admin/SystemLogs/Index" class="btn btn-secondary mt-2">Clear</a>
+            </div>
+
+        </form>
+    </div>
+</div>
+
+<table class="table table-striped table-hover">
+    <thead>
+        <tr>
+            <th>Timestamp</th>
+            <th>Level</th>
+            <th>Event Type</th>
+            <th>User</th>
+            <th>Target User</th>
+            <th>Message</th>
+            <th></th>
+        </tr>
+    </thead>
+
+    <tbody>
+        @foreach (var log in Model.Logs)
+        {
+            <tr>
+                <td>@log.Timestamp</td>
+
+                <td>
+                    <span class="badge bg-@GetBadgeColor(log.Level)">
+                        @log.Level
+                    </span>
+                </td>
+
+                <td>@log.EventType</td>
+                <td>@log.UserId</td>
+                <td>@log.TargetUserId</td>
+                <td>@log.Message</td>
+
+                <td>
+                    <button class="btn btn-sm btn-outline-info"
+                            type="button"
+                            data-bs-toggle="collapse"
+                            data-bs-target="#details-@log.LogId">
+                        Details
+                    </button>
+                </td>
+            </tr>
+
+            <tr class="collapse" id="details-@log.LogId">
+                <td colspan="7">
+                    <div class="p-3 bg-light border rounded">
+                        <strong>Page:</strong> @log.Page <br />
+
+                        <strong>Additional Data:</strong>
+                        <pre>@log.AdditionalData</pre>
+
+                        @if (!string.IsNullOrEmpty(log.StackTrace))
+                        {
+                            <strong>Stack Trace:</strong>
+                            <pre>@log.StackTrace</pre>
+                        }
+                    </div>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@functions {
+    string GetBadgeColor(string level)
+    {
+        return level switch
+        {
+            "Information" => "primary",
+            "Warning" => "warning",
+            "Error" => "danger",
+            "Critical" => "dark",
+            _ => "secondary"
+        };
+    }
+}

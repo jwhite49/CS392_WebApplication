@@ -30,10 +30,14 @@ builder.Services.AddDbContext<School_UserDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("ApplicationDbContext") ?? throw new InvalidOperationException("Connection string 'School_UserDbContext' not found.")));
 builder.Services.AddDbContext<Product_listDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("ApplicationDbContext") ?? throw new InvalidOperationException("Connection string 'Product_listDbContext' not found.")));
+builder.Services.AddDbContext<SystemLogDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("ApplicationDbContext") ?? throw new InvalidOperationException("Connection string 'SystemLogDbContext' not found.")));
 builder.Services.AddControllersWithViews();
 
 builder.Services.AddScoped<apiConfig>();
 builder.Services.AddScoped<ProductService>();
+builder.Services.AddScoped<SignInManager<IdentityUser>, LoggingSignInManager>();
+
 //If APIController needs ProductService
 //→ create one and pass it in
 
@@ -67,6 +71,8 @@ if (!app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
+app.UseMiddleware<GlobalExceptionMiddleware>(); //Log global exceptions to database and redirect to error page
+
 
 app.UseRouting();
 
