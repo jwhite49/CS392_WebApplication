@@ -31,19 +31,14 @@ namespace CS392_WebApplication.Services
                 {
                     product_name = result["title"]?.ToString(), //"?" prevents errors if value is missing
                     description = result["description"]?.ToString(),
-                    retail_URL = result["link"]?.ToString(),
+                    retail_URL = result["serpapi_link"]?.ToString(),
+                    retail_price = result["extracted_price"].ToObject<double>(),
                     ImageURL = result["thumbnail"]?.ToString(),
+                    source_name = result["source"]?.ToString(),
+                    source_logo = result["source_logo"]?.ToString(),
+                    rating = result["rating"] != null ? result["rating"].ToObject<double>() : 0.00,
+                    reviews = result["reviews"]?.ToObject<int?>(),
                 };
-                if(double.TryParse(result["price"]?.ToString()?.Replace("$",""), out double retailPrice)) 
-                { 
-                    product.retail_price=retailPrice;
-                    //converts price from ("$20.99") -> (20.99)
-                    //remove $, try convert to decimal, store in price field, if conversion fails price is set to 0
-                }
-                 else
-                {
-                    product.retail_price = 0; //default price if conversion fails
-                }   
                 products.Add(product); //add converted product to list
             }
             _context.Products.AddRange(products); // add all products to database, not saved yet 

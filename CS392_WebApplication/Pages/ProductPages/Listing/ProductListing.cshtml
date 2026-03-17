@@ -5,25 +5,44 @@
 }
 
 <h1>Product: @Model.Product.product_name</h1>
-<br />
+<br/>
 
 <div class="flex-container">
     <div class="item-smallPicture">
-        <h1> Pictures</h1>
-        <p> some placement for pictures</p>
+        <h1>Pictures</h1>
     </div>
     <div class="item-mainPicture">
-        <h1> Product Information</h1>
-        <p>
-            @Model.Product.product_name
-        </p>
+        <h1> </h1>
+        <img src="@Model.Product.ImageURL" alt="@Model.Product.product_name" style="max-width: 40%; min-height: 70%;"/>
     </div>
     <div class="item-description">
-        <h1> Product description</h1>
-        <p> @Model.Product.description</p>
+        <h2>@Model.Product.product_name</h2>
+        <p> Rating: @Model.Product.rating</p>
+        <p> Review: @Model.Product.reviews</p>
+        <p> Price: $@Model.Product.retail_price</p>
     </div>
     <div class="item-otherSites">
         <h1> Other sites</h1>
-        <p> @Model.Product.retail_URL</p>
+        @if (!string.IsNullOrWhiteSpace(Model.Product.retail_URL))
+        {
+            <a href="@Model.Product.retail_URL" target="_blank" rel="noopener">
+                Buy on @(Model.Product.source_name ?? "Retailer")
+            </a>
+        }
+        else
+        {
+            <span class="text-muted">No retailer link available</span>
+        }
     </div>
 </div>
+
+
+<!--                product_name = result["title"]?.ToString(), //"?" prevents errors if value is missing
+                    description = result["description"]?.ToString(),
+                    retail_URL = result["serpapi_link"]?.ToString(),
+                    ImageURL = result["thumbnail"]?.ToString(),
+                    source_name = result["source"]?.ToString(),
+                    source_logo = result["source_logo"]?.ToString(),
+                    rating = result["rating"]?.ToObject<float?>(),
+                    reviews = result["reviews"]?.ToObject<int?>(),
+                    retail_price = result["extracted_price"].ToObject<double>(), -->

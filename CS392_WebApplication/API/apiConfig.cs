@@ -38,15 +38,19 @@ namespace CS392_WebApplication.API
                 results = (JArray)data["shopping_results"]; //reads results
                 Console.WriteLine("[SearchProducts] Result count: " + (results?.Count ?? 0));
 
-                foreach (JObject result in results ?? new JArray())
+                /*foreach (JObject result in results ?? new JArray())
                 {
-                    var found = ("Found: " + result["title"]);
-                    var title = (result["title"]);                    
-                    var price = (result["price"]);
-                    var link = (result["link"]);
+                    var title = (result["title"]);      
+                    var description = (result["description"]);              
+                    var price = (result["extracted_price"]);
+                    var link = (result["serpapi_link"]);
                     var image = (result["thumbnail"]);
+                    var source = (result["source"]);
+                    var sourceLogo = (result["source_logo"]);
+                    var rating = (result["rating"]);
+                    var reviews = (result["reviews"]);
                     //loop extracts each result
-                }
+                }*/
             }
             catch (SerpApiSearchException ex)
             {

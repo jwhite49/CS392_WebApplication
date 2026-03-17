@@ -68,15 +68,17 @@ namespace CS392_WebApplication.Pages.ProductPages.Catalog
                 var product = new Products //convert json to product object
                 {
                     product_name = result["title"]?.ToString()?[..Math.Min(result["title"]?.ToString()?.Length ?? 0, 50)] ?? "",
-                    description = result["snippet"]?.ToString() ?? "",
-                    retail_URL = result["link"]?.ToString() ?? "",
+                    description = result["description"]?.ToString() ?? "",
+                    retail_URL = result["serpapi_link"]?.ToString() ?? "",
                     ImageURL = result["thumbnail"]?.ToString() ?? "",
+                    source_name = result["source"]?.ToString(),
+                    source_logo = result["source_icon"]?.ToString(),
+                    rating = result["rating"]?.ToObject<double?>(),
+                    reviews = result["reviews"]?.ToObject<int?>(),
                 };  
-                if(double.TryParse(result["price"]?.ToString()?.Replace("$",""), out double retailPrice)) 
+                if(double.TryParse(result["extracted_price"]?.ToString(), out double retailPrice)) 
                 { 
                     product.retail_price=retailPrice;
-                    //converts price from ("$20.99") -> (20.99)
-                    //remove $, try convert to decimal, store in price field, if conversion fails price is set to 0
                 }
                  else
                 {
@@ -89,6 +91,20 @@ namespace CS392_WebApplication.Pages.ProductPages.Catalog
                 //saves info after the loop iteration, API gets results into db then application picks up results
             _context.Products.AddRange(apiProducts); // add all products to database, not saved yet 
             await _context.SaveChangesAsync(); //save changes to database, now products are stored in DB, executes sql line
+
+                // Remove duplicate products — keep the oldest entry (lowest ID) for each product_name
+                var allProducts = await _context.Products.ToListAsync();
+                var duplicates = allProducts
+                    .GroupBy(p => p.product_name)
+                    .Where(g => g.Count() > 1)
+                    .SelectMany(g => g.OrderBy(p => p.product_ID).Skip(1)) // skip the first (oldest), select the rest
+                    .ToList();
+
+                if (duplicates.Any())
+                {
+                    _context.Products.RemoveRange(duplicates);
+                    await _context.SaveChangesAsync();
+                }
             }
             
 
