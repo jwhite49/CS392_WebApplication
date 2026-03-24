@@ -172,9 +172,13 @@ else
                                 View @(item.source_name.Length > 8 ? item.source_name.Substring(0, 8) + "…" : item.source_name)
                             </a>
 
-                            <a href="#" class="btn btn-warning">
-                                Add to List
-                            </a>
+                            <form method="post" asp-page-handler="AddToList">
+                                <input type="hidden" name="productId" value="@item.product_ID" />
+                                <button class="btn btn-warning mt-2" type="submit">
+                                    Add to List
+                                </button>
+                            </form>
+
                         </div>
                     </div>
                 </div>

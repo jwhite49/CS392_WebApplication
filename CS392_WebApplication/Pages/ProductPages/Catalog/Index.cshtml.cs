@@ -4,113 +4,188 @@ using CS392_WebApplication.API;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Identity.Client;
-using SerpApi;
+using Microsoft.AspNetCore.Identity;
 using Newtonsoft.Json.Linq;
-
 
 namespace CS392_WebApplication.Pages.ProductPages.Catalog
 {
     public class IndexModel : PageModel
     {
-        private readonly ProductsDbContext _context;
-        private readonly apiConfig _serpApiService; // api service field
-        private readonly catalogListModel allowedSearches; 
-        //pulls search data from other page
+        private readonly ProductsDbContext _productsContext;
+        private readonly Product_listDbContext _listContext;
+        private readonly UserDbContext _userContext;
+        private readonly UserManager<IdentityUser> _userManager;
+        private readonly apiConfig _serpApiService;
 
-        
-        public IndexModel(ProductsDbContext context, apiConfig serpApiService)
+        public IndexModel(
+            ProductsDbContext productsContext,
+            Product_listDbContext listContext,
+            UserDbContext userContext,
+            UserManager<IdentityUser> userManager,
+            apiConfig serpApiService)
         {
-            _context = context;
+            _productsContext = productsContext;
+            _listContext = listContext;
+            _userContext = userContext;
+            _userManager = userManager;
             _serpApiService = serpApiService;
         }
 
         public IList<Products> Products { get; set; }
-        //Variable for sorting
+
+        // Sorting
         [BindProperty(SupportsGet = true)]
         public string Sort { get; set; }
 
-        //Search variable for search bar
+        // Search
         [BindProperty(SupportsGet = true)]
         public string Search { get; set; }
-        //Variables for pagination
+
+        // Pagination
         [BindProperty(SupportsGet = true)]
         public int PageNumber { get; set; } = 1;
-        public int PageSize { get; } = 12; //12 products per page, can be adjusted as needed
+
+        public int PageSize { get; } = 12;
         public int TotalItems { get; set; }
         public int TotalPages => (int)Math.Ceiling((double)TotalItems / PageSize);
 
+        // ---------------------------------------------------------
+        // ADD TO LIST HANDLER
+        // ---------------------------------------------------------
+        public async Task<IActionResult> OnPostAddToListAsync(int productId)
+        {
+            // Must be signed in
+            var identityUser = await _userManager.GetUserAsync(User);
+            if (identityUser == null)
+                return RedirectToPage("/Account/Login");
+
+            // Bridge Identity user → custom User table via email
+            var appUser = await _userContext.User
+                .FirstOrDefaultAsync(u => u.Email == identityUser.Email);
+
+            if (appUser == null)
+                return RedirectToPage("/Error");
+
+            int userId = appUser.UserID;
+
+            // Check if user already has a list
+            var list = await _listContext.Product_list
+                .FirstOrDefaultAsync(l => l.userID == userId);
+
+            // If no list → create one
+            if (list == null)
+            {
+                list = new Product_list
+                {
+                    userID = userId,
+                    total_price = 0,
+                    list_type = ListType.User,
+                    created_at = DateTime.UtcNow
+                };
+
+                _listContext.Product_list.Add(list);
+                await _listContext.SaveChangesAsync();
+            }
+
+            // Get product
+            var product = await _productsContext.Products
+                .FirstOrDefaultAsync(p => p.product_ID == productId);
+
+            if (product == null)
+                return RedirectToPage("/Error");
+
+            // Add item to list
+            var item = new Product_list_items
+            {
+                list_ID = list.listID,
+                product_ID = productId,
+                quantity = 1,
+                price_at_purchase = (float)product.retail_price,
+                purchase_type = Product_list_items.PurchaseType.Retail
+            };
+
+            _productsContext.Product_list_items.Add(item);
+            await _productsContext.SaveChangesAsync();
+
+            // Update total price
+            list.total_price += product.retail_price;
+            await _listContext.SaveChangesAsync();
+
+            TempData["SuccessMessage"] = $"{product.product_name} added to your list!";
+            return RedirectToPage();
+        }
+
+        // ---------------------------------------------------------
+        // GET: Catalog Page
+        // ---------------------------------------------------------
         public async Task OnGetAsync()
         {
-
             var apiProducts = new List<Products>();
 
-            bool searchMatch = catalogListModel.AllowedSearches.Any(s => 
-            Search != null && (
-                Search.Contains(s, StringComparison.OrdinalIgnoreCase) ||
-                s.Contains(Search, StringComparison.OrdinalIgnoreCase)
-            ));
-           //pulls search match from catalogList and checks if filtered search matches user search
-           //This limits user searching up explicit items and saving into DB
+            bool searchMatch = catalogListModel.AllowedSearches.Any(s =>
+                Search != null && (
+                    Search.Contains(s, StringComparison.OrdinalIgnoreCase) ||
+                    s.Contains(Search, StringComparison.OrdinalIgnoreCase)
+                ));
 
+            // ---------------------------------------------------------
+            // SERP API INGESTION
+            // ---------------------------------------------------------
             if (!string.IsNullOrEmpty(Search) && searchMatch)
             {
-                var results = _serpApiService.SearchProducts(Search); //calls serp api 
-                
-                //currently works and displays results in console, next step is to save results to DB and display on frontend
-                var resultLimit = 0;
-                foreach (JObject result in results?? new JArray())
-                {
-                    if(resultLimit >= 20)
-                    {
-                       break; //limit to 15 results to prevent overloading DB, can be adjusted as needed
-                    } 
-                var product = new Products //convert json to product object
-                {
-                    product_name = result["title"]?.ToString()?[..Math.Min(result["title"]?.ToString()?.Length ?? 0, 50)] ?? "",
-                    description = result["description"]?.ToString() ?? "",
-                    retail_URL = result["serpapi_link"]?.ToString() ?? "",
-                    ImageURL = result["thumbnail"]?.ToString() ?? "",
-                    source_name = result["source"]?.ToString(),
-                    source_logo = result["source_icon"]?.ToString(),
-                    rating = result["rating"]?.ToObject<double?>(),
-                    reviews = result["reviews"]?.ToObject<int?>(),
-                };  
-                if(double.TryParse(result["extracted_price"]?.ToString(), out double retailPrice)) 
-                { 
-                    product.retail_price=retailPrice;
-                }
-                 else
-                {
-                    product.retail_price = 0; //default price if conversion fails
-                }   
-                apiProducts.Add(product); //add converted product to list
-                //loop extracts each result
-                resultLimit++;
-                }
-                //saves info after the loop iteration, API gets results into db then application picks up results
-            _context.Products.AddRange(apiProducts); // add all products to database, not saved yet 
-            await _context.SaveChangesAsync(); //save changes to database, now products are stored in DB, executes sql line
+                var results = _serpApiService.SearchProducts(Search);
 
-                // Remove duplicate products — keep the oldest entry (lowest ID) for each product_name
-                var allProducts = await _context.Products.ToListAsync();
+                int resultLimit = 0;
+
+                foreach (JObject result in results ?? new JArray())
+                {
+                    if (resultLimit >= 20)
+                        break;
+
+                    var product = new Products
+                    {
+                        product_name = result["title"]?.ToString()?[..Math.Min(result["title"]?.ToString()?.Length ?? 0, 50)] ?? "",
+                        description = result["description"]?.ToString() ?? "",
+                        retail_URL = result["serpapi_link"]?.ToString() ?? "",
+                        ImageURL = result["thumbnail"]?.ToString() ?? "",
+                        source_name = result["source"]?.ToString(),
+                        source_logo = result["source_icon"]?.ToString(),
+                        rating = result["rating"]?.ToObject<double?>(),
+                        reviews = result["reviews"]?.ToObject<int?>(),
+                    };
+
+                    if (double.TryParse(result["extracted_price"]?.ToString(), out double retailPrice))
+                        product.retail_price = retailPrice;
+                    else
+                        product.retail_price = 0;
+
+                    apiProducts.Add(product);
+                    resultLimit++;
+                }
+
+                _productsContext.Products.AddRange(apiProducts);
+                await _productsContext.SaveChangesAsync();
+
+                // Remove duplicate products
+                var allProducts = await _productsContext.Products.ToListAsync();
                 var duplicates = allProducts
                     .GroupBy(p => p.product_name)
                     .Where(g => g.Count() > 1)
-                    .SelectMany(g => g.OrderBy(p => p.product_ID).Skip(1)) // skip the first (oldest), select the rest
+                    .SelectMany(g => g.OrderBy(p => p.product_ID).Skip(1))
                     .ToList();
 
                 if (duplicates.Any())
                 {
-                    _context.Products.RemoveRange(duplicates);
-                    await _context.SaveChangesAsync();
+                    _productsContext.Products.RemoveRange(duplicates);
+                    await _productsContext.SaveChangesAsync();
                 }
             }
-            
 
-            var query = _context.Products.AsQueryable();
+            // ---------------------------------------------------------
+            // QUERY + FILTERS
+            // ---------------------------------------------------------
+            var query = _productsContext.Products.AsQueryable();
 
-            // Search filter for search bar
             if (!string.IsNullOrEmpty(Search))
             {
                 query = query.Where(p =>
@@ -118,50 +193,35 @@ namespace CS392_WebApplication.Pages.ProductPages.Catalog
                     p.description.Contains(Search));
             }
 
-            // Role-based filtering, User cannot see bulk available products.
+            // Regular users cannot see bulk items
             if (!User.IsInRole("Admin") && !User.IsInRole("School"))
             {
-                // Regular users only see non-bulk products
                 query = query.Where(p => p.bulk_availability == false);
             }
 
-            // Sorting for sorting options
+            // Sorting
             query = Sort switch
             {
                 "name_asc" => query.OrderBy(p => p.product_name),
                 "name_desc" => query.OrderByDescending(p => p.product_name),
                 "price_asc" => query.OrderBy(p => p.retail_price),
                 "price_desc" => query.OrderByDescending(p => p.retail_price),
-                _ => query.OrderBy(p => p.product_name) // default sort
+                _ => query.OrderBy(p => p.product_name)
             };
 
-            // Clamp PageNumber (in case someone passes 0 or negative)
+            // Pagination
             if (PageNumber < 1)
-            {
                 PageNumber = 1;
-            }
 
-            // Total items AFTER filters
             TotalItems = await query.CountAsync();
 
-            // Clamp PageNumber to TotalPages (if there are items)
             if (TotalItems > 0 && PageNumber > TotalPages)
-            {
                 PageNumber = TotalPages;
-            }
 
-            
-
-            //  Apply pagination
             Products = await query
                 .Skip((PageNumber - 1) * PageSize)
                 .Take(PageSize)
                 .ToListAsync();
-
-            //api
-            
-            
-            
         }
     }
 }

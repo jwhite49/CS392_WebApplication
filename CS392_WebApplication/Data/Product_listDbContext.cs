@@ -11,5 +11,6 @@ namespace CS392_WebApplication.Data
         }
 
         public DbSet<Product_list> Product_list { get; set; }
+
     }
 }
