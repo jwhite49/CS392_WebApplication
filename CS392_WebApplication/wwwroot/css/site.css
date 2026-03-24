@@ -68,6 +68,7 @@ table, th, td {
    
     .popularButtons img{
         height:120px;
+        border-radius: 10%;
     }
     .middleButtons, .popularButtons {
         text-align: center;
