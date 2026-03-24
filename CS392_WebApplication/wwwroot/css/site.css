@@ -8,7 +8,7 @@ html {
   }
 }
 
-nav{
+nav, footer{
     background-color: var(--schoolyellow);
     
 }
@@ -92,17 +92,17 @@ table, th, td {
       margin-right: 10px;
     }
     .item-mainPicture{
-      flex-basis:40%; 
+      flex-basis:33%; 
       text-align: center;
       padding: 10px;
     }
     .item-description{
-      flex-basis:40%; 
+      flex-basis:44%; 
       text-align: center;
       padding: 10px;
     }
     .item-otherSites{
-      flex-basis:10%; 
+      flex-basis:13%; 
       background-color: var(--schoolyellow);
       text-align: center;
       padding: 10px;

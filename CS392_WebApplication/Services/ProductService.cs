@@ -11,10 +11,10 @@ namespace CS392_WebApplication.Services
 {
     public class ProductService
     {
-        private readonly ApplicationDbContext _context; //database field
+        private readonly ProductsDbContext _context; //database field
         private readonly apiConfig _serpApiService; // api service field
 
-        public ProductService(ApplicationDbContext context, apiConfig serpApiService)
+        public ProductService(ProductsDbContext context, apiConfig serpApiService)
         {
             _context = context;
             _serpApiService = serpApiService;
@@ -31,24 +31,20 @@ namespace CS392_WebApplication.Services
                 {
                     product_name = result["title"]?.ToString(), //"?" prevents errors if value is missing
                     description = result["description"]?.ToString(),
-                    retail_URL = result["link"]?.ToString(),
+                    retail_URL = result["serpapi_link"]?.ToString(),
+                    retail_price = result["extracted_price"].ToObject<double>(),
                     ImageURL = result["thumbnail"]?.ToString(),
-                    IntoSystemAt = DateTime.Now
-
-
+                    source_name = result["source"]?.ToString(),
+                    source_logo = result["source_logo"]?.ToString(),
+                    rating = result["rating"] != null ? result["rating"].ToObject<double>() : 0.00,
+                    reviews = result["reviews"]?.ToObject<int?>(),
                 };
-                if(decimal.TryParse(result["price"]?.ToString()?.Replace("$",""), out decimal price)) 
-                product.retail_price=price;
-                //converts price from ("$20.99") -> (20.99)
-                // remove $, try convert to decimal, store in price 
                 products.Add(product); //add converted product to list
-
             }
-            _context.Product.AddRange(products); // add all products to database, not saved yet 
+            _context.Products.AddRange(products); // add all products to database, not saved yet 
             await _context.SaveChangesAsync(); //save changes to database, now products are stored in DB, executes sql line
+            // await allows the database operation to run asynchronously
             return products; //returns saved products back to controller
-
-
         }
     }
 }

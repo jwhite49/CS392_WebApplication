@@ -35,7 +35,23 @@ namespace CS392_WebApplication.Models
 
         [Column("ImageURL")]
         public string? ImageURL { get; set; }
-        public DateTime IntoSystemAt { get; set; }
 
+        [Column("sample_review")]
+        [MaxLength(255)]
+        public string? sample_review { get; set; }
+
+        [Column("source_logo")]
+        [MaxLength(255)]
+        public string? source_logo { get; set; }
+
+        [Column("source_name")]
+        [MaxLength(40)]
+        public string? source_name { get; set; }
+
+        [Column("item_rating")]
+        public double? rating { get; set; }
+
+        [Column("item_reviews")]
+        public int? reviews { get; set; }
     }
 }

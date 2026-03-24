@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace CS392_WebApplication.Migrations
 {
     [DbContext(typeof(ProductsDbContext))]
-    partial class ProductsDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260310204430_Remove_IntoSystemAt")]
+    partial class Remove_IntoSystemAt
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -64,6 +67,9 @@ namespace CS392_WebApplication.Migrations
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("ImageURL");
 
+                    b.Property<DateTime>("IntoSystemAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<bool>("bulk_availability")
                         .HasColumnType("bit")
                         .HasColumnName("bulk_availability");
@@ -78,10 +84,6 @@ namespace CS392_WebApplication.Migrations
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("product_name");
 
-                    b.Property<float?>("rating")
-                        .HasColumnType("real")
-                        .HasColumnName("rating");
-
                     b.Property<string>("retail_URL")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)")
@@ -90,25 +92,6 @@ namespace CS392_WebApplication.Migrations
                     b.Property<double>("retail_price")
                         .HasColumnType("float")
                         .HasColumnName("retail_price");
-
-                    b.Property<int?>("reviews")
-                        .HasColumnType("int")
-                        .HasColumnName("reviews");
-
-                    b.Property<string>("sample_Review")
-                        .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)")
-                        .HasColumnName("sample Review");
-
-                    b.Property<string>("source_logo")
-                        .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)")
-                        .HasColumnName("source_logo");
-
-                    b.Property<string>("source_name")
-                        .HasMaxLength(40)
-                        .HasColumnType("nvarchar(40)")
-                        .HasColumnName("source_name");
 
                     b.HasKey("product_ID");
 
