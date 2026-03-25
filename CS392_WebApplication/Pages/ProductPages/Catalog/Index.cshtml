@@ -110,7 +110,7 @@ else
         @foreach (var item in Model.Products)
         {
             <div class="col-md-4 mb-4">
-                <div class="card h-100 shadow-sm product-card" onclick="window.location='/ProductPages/Listing/ProductListing/@item.product_name'">
+                <div class="card h-100 shadow-sm product-card" onclick="window.location='/ProductPages/Listing/@item.product_ID'">
                     <div class="card-body">
                         <h5 class="card-title">@item.product_name</h5>
                         @if (!string.IsNullOrEmpty(item.ImageURL))
@@ -164,9 +164,11 @@ else
                         </p>
 
                         <div class="d-flex flex-wrap gap-2 mt-3">
-                            <a href="/ProductPages/Listing/ProductListing/@item.product_name" class="btn btn-primary">
+                            <a href="/ProductPages/Listing/@item.product_ID" class="btn btn-primary">
                                 View Details
                             </a>
+
+
 
                             <a href="@item.retail_URL" class="btn btn-success">
                                 View @(item.source_name.Length > 8 ? item.source_name.Substring(0, 8) + "…" : item.source_name)

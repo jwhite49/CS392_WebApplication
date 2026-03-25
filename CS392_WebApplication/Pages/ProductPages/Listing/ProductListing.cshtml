@@ -1,48 +1,135 @@
-﻿@page "{category}"
+﻿@page "/ProductPages/Listing/{id:int}"
 @model ProductListingModel
 @{
-    ViewData["Title"] = "ProductListing";
+    ViewData["Title"] = Model.Product.product_name;
 }
 
-<h1>Product: @Model.Product.product_name</h1>
-<br/>
+<div class="container mt-4">
 
-<div class="flex-container">
-    <div class="item-smallPicture">
-        <h1>Pictures</h1>
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show d-flex justify-content-between align-items-center" role="alert">
+            <div>
+                @TempData["SuccessMessage"]
+            </div>
+
+            <div class="d-flex gap-2">
+
+                <!-- View My List -->
+                <a href="/Lists/List" class="btn btn-sm btn-primary">
+                    View My List
+                </a>
+
+                <!-- Undo Button -->
+                <form method="post" asp-page-handler="UndoAdd" class="d-inline">
+                    <input type="hidden" name="productId" value="@Model.Product.product_ID" />
+                    <button type="submit" class="btn btn-sm btn-warning">
+                        Undo
+                    </button>
+                </form>
+
+                <!-- Close Alert -->
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        </div>
+    }
+
+    <!-- Back to Catalog -->
+    <a href="/ProductPages/Catalog/Index" class="btn btn-secondary mb-3">
+        ← Back to Catalog
+    </a>
+
+    <!-- Product Title -->
+    <h2 class="mb-4">@Model.Product.product_name</h2>
+
+    <div class="row">
+
+        <!-- LEFT: Main Image -->
+        <div class="col-md-5 text-center mb-4">
+            <img src="@Model.Product.ImageURL"
+                 alt="@Model.Product.product_name"
+                 class="img-fluid rounded shadow-sm"
+                 style="max-height: 350px; object-fit: contain;" />
+        </div>
+
+        <!-- RIGHT: Product Info -->
+        <div class="col-md-7">
+
+            <!-- Rating + Reviews -->
+            <div class="mb-3">
+                <h5 class="mb-1">Rating</h5>
+                @if (Model.Product.rating.HasValue)
+                {
+                    <p class="mb-0">
+                        ⭐ @Model.Product.rating / 5
+                        <span class="text-muted">(@Model.Product.reviews reviews)</span>
+                    </p>
+                }
+                else
+                {
+                    <p class="text-muted">No rating available</p>
+                }
+            </div>
+
+            <!-- Price -->
+            <div class="mb-3">
+                <h5 class="mb-1">Price</h5>
+                <p class="fs-4 fw-bold">$@Model.Product.retail_price</p>
+            </div>
+
+            <!-- Description -->
+            <div class="mb-3">
+                <h5 class="mb-1">Description</h5>
+                <p>@Model.Product.description</p>
+            </div>
+
+            <!-- Sample Review -->
+            @if (!string.IsNullOrWhiteSpace(Model.Product.sample_review))
+            {
+                <div class="mb-3">
+                    <h5 class="mb-1">Sample Review</h5>
+                    <blockquote class="blockquote">
+                        <p class="mb-0">"@Model.Product.sample_review"</p>
+                    </blockquote>
+                </div>
+            }
+
+            <!-- Retailer Link -->
+            <div class="mt-4 p-3 border rounded bg-light">
+                <h5>Buy This Item</h5>
+
+                @if (!string.IsNullOrWhiteSpace(Model.Product.retail_URL))
+                {
+                    <a href="@Model.Product.retail_URL"
+                       target="_blank"
+                       rel="noopener"
+                       class="btn btn-primary mt-2">
+
+                        @if (!string.IsNullOrWhiteSpace(Model.Product.source_logo))
+                        {
+                            <img src="@Model.Product.source_logo"
+                                 alt="@Model.Product.source_name"
+                                 style="height: 20px; margin-right: 8px;" />
+                        }
+
+                        Buy on @(Model.Product.source_name ?? "Retailer")
+                    </a>
+                }
+                else
+                {
+                    <p class="text-muted">No retailer link available</p>
+                }
+            </div>
+
+            <!-- Add to List Button -->
+            <form method="post" asp-page-handler="AddToList" class="mt-4">
+                <input type="hidden" name="productId" value="@Model.Product.product_ID" />
+                <button type="submit" class="btn btn-success">
+                    + Add to My List
+                </button>
+            </form>
+
+        </div>
     </div>
-    <div class="item-mainPicture">
-        <h1> </h1>
-        <img src="@Model.Product.ImageURL" alt="@Model.Product.product_name" style="max-width: 40%; min-height: 70%;"/>
-    </div>
-    <div class="item-description">
-        <h2>@Model.Product.product_name</h2>
-        <p> Rating: @Model.Product.rating</p>
-        <p> Review: @Model.Product.reviews</p>
-        <p> Price: $@Model.Product.retail_price</p>
-    </div>
-    <div class="item-otherSites">
-        <h1> Other sites</h1>
-        @if (!string.IsNullOrWhiteSpace(Model.Product.retail_URL))
-        {
-            <a href="@Model.Product.retail_URL" target="_blank" rel="noopener">
-                Buy on @(Model.Product.source_name ?? "Retailer")
-            </a>
-        }
-        else
-        {
-            <span class="text-muted">No retailer link available</span>
-        }
-    </div>
+
 </div>
-
-
-<!--                product_name = result["title"]?.ToString(), //"?" prevents errors if value is missing
-                    description = result["description"]?.ToString(),
-                    retail_URL = result["serpapi_link"]?.ToString(),
-                    ImageURL = result["thumbnail"]?.ToString(),
-                    source_name = result["source"]?.ToString(),
-                    source_logo = result["source_logo"]?.ToString(),
-                    rating = result["rating"]?.ToObject<float?>(),
-                    reviews = result["reviews"]?.ToObject<int?>(),
-                    retail_price = result["extracted_price"].ToObject<double>(), -->

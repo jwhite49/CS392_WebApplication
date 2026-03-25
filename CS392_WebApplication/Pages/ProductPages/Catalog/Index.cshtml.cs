@@ -41,6 +41,10 @@ namespace CS392_WebApplication.Pages.ProductPages.Catalog
         [BindProperty(SupportsGet = true)]
         public string Search { get; set; }
 
+        // Category filter
+        [BindProperty(SupportsGet = true)]
+        public string Category { get; set; }
+
         // Pagination
         [BindProperty(SupportsGet = true)]
         public int PageNumber { get; set; } = 1;
@@ -54,12 +58,10 @@ namespace CS392_WebApplication.Pages.ProductPages.Catalog
         // ---------------------------------------------------------
         public async Task<IActionResult> OnPostAddToListAsync(int productId)
         {
-            // Must be signed in
             var identityUser = await _userManager.GetUserAsync(User);
             if (identityUser == null)
                 return RedirectToPage("/Account/Login");
 
-            // Bridge Identity user → custom User table via email
             var appUser = await _userContext.User
                 .FirstOrDefaultAsync(u => u.Email == identityUser.Email);
 
@@ -68,11 +70,9 @@ namespace CS392_WebApplication.Pages.ProductPages.Catalog
 
             int userId = appUser.UserID;
 
-            // Check if user already has a list
             var list = await _listContext.Product_list
                 .FirstOrDefaultAsync(l => l.userID == userId);
 
-            // If no list → create one
             if (list == null)
             {
                 list = new Product_list
@@ -87,14 +87,12 @@ namespace CS392_WebApplication.Pages.ProductPages.Catalog
                 await _listContext.SaveChangesAsync();
             }
 
-            // Get product
             var product = await _productsContext.Products
                 .FirstOrDefaultAsync(p => p.product_ID == productId);
 
             if (product == null)
                 return RedirectToPage("/Error");
 
-            // Add item to list
             var item = new Product_list_items
             {
                 list_ID = list.listID,
@@ -107,7 +105,6 @@ namespace CS392_WebApplication.Pages.ProductPages.Catalog
             _productsContext.Product_list_items.Add(item);
             await _productsContext.SaveChangesAsync();
 
-            // Update total price
             list.total_price += product.retail_price;
             await _listContext.SaveChangesAsync();
 
@@ -120,72 +117,17 @@ namespace CS392_WebApplication.Pages.ProductPages.Catalog
         // ---------------------------------------------------------
         public async Task OnGetAsync()
         {
-            var apiProducts = new List<Products>();
-
-            bool searchMatch = catalogListModel.AllowedSearches.Any(s =>
-                Search != null && (
-                    Search.Contains(s, StringComparison.OrdinalIgnoreCase) ||
-                    s.Contains(Search, StringComparison.OrdinalIgnoreCase)
-                ));
-
-            // ---------------------------------------------------------
-            // SERP API INGESTION
-            // ---------------------------------------------------------
-            if (!string.IsNullOrEmpty(Search) && searchMatch)
-            {
-                var results = _serpApiService.SearchProducts(Search);
-
-                int resultLimit = 0;
-
-                foreach (JObject result in results ?? new JArray())
-                {
-                    if (resultLimit >= 20)
-                        break;
-
-                    var product = new Products
-                    {
-                        product_name = result["title"]?.ToString()?[..Math.Min(result["title"]?.ToString()?.Length ?? 0, 50)] ?? "",
-                        description = result["description"]?.ToString() ?? "",
-                        retail_URL = result["serpapi_link"]?.ToString() ?? "",
-                        ImageURL = result["thumbnail"]?.ToString() ?? "",
-                        source_name = result["source"]?.ToString(),
-                        source_logo = result["source_icon"]?.ToString(),
-                        rating = result["rating"]?.ToObject<double?>(),
-                        reviews = result["reviews"]?.ToObject<int?>(),
-                    };
-
-                    if (double.TryParse(result["extracted_price"]?.ToString(), out double retailPrice))
-                        product.retail_price = retailPrice;
-                    else
-                        product.retail_price = 0;
-
-                    apiProducts.Add(product);
-                    resultLimit++;
-                }
-
-                _productsContext.Products.AddRange(apiProducts);
-                await _productsContext.SaveChangesAsync();
-
-                // Remove duplicate products
-                var allProducts = await _productsContext.Products.ToListAsync();
-                var duplicates = allProducts
-                    .GroupBy(p => p.product_name)
-                    .Where(g => g.Count() > 1)
-                    .SelectMany(g => g.OrderBy(p => p.product_ID).Skip(1))
-                    .ToList();
-
-                if (duplicates.Any())
-                {
-                    _productsContext.Products.RemoveRange(duplicates);
-                    await _productsContext.SaveChangesAsync();
-                }
-            }
-
-            // ---------------------------------------------------------
-            // QUERY + FILTERS
-            // ---------------------------------------------------------
             var query = _productsContext.Products.AsQueryable();
 
+            // CATEGORY FILTER
+            if (!string.IsNullOrEmpty(Category))
+            {
+                query = query.Where(p =>
+                    p.product_name.Contains(Category) ||
+                    p.description.Contains(Category));
+            }
+
+            // SEARCH FILTER
             if (!string.IsNullOrEmpty(Search))
             {
                 query = query.Where(p =>
@@ -193,13 +135,13 @@ namespace CS392_WebApplication.Pages.ProductPages.Catalog
                     p.description.Contains(Search));
             }
 
-            // Regular users cannot see bulk items
+            // REGULAR USERS CANNOT SEE BULK ITEMS
             if (!User.IsInRole("Admin") && !User.IsInRole("School"))
             {
                 query = query.Where(p => p.bulk_availability == false);
             }
 
-            // Sorting
+            // SORTING
             query = Sort switch
             {
                 "name_asc" => query.OrderBy(p => p.product_name),
@@ -209,7 +151,7 @@ namespace CS392_WebApplication.Pages.ProductPages.Catalog
                 _ => query.OrderBy(p => p.product_name)
             };
 
-            // Pagination
+            // PAGINATION
             if (PageNumber < 1)
                 PageNumber = 1;
 

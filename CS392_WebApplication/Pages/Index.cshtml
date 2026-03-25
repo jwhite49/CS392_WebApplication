@@ -1,45 +1,80 @@
 ﻿@page
 @model IndexModel
 @{
-    ViewData["Title"] = "Home page";
+    ViewData["Title"] = "Home";
 }
 
-<!--<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASPCore</a>.</p>
-</div> -->
-
 <div class="container mt-4">
+
+    <!-- Top Banner -->
     <img src="/images/TopBanner.png" class="banner mb-4" />
 
-    <div class="middleButtons mb-3 text-center">
-        <button type="button" onclick="window.location.href='/Lists/List'"><p>Create a list</p></button>
-        <button type="button"><p>Shop by:</p></button>
-        <button type="button"><p>Bundles</p></button>
+    <!-- Main Action Buttons -->
+    <div class="text-center mb-4">
+        <button class="home-action-btn" onclick="window.location.href='/ProductPages/Catalog/Index'">
+            Browse Catalog
+        </button>
+
+        <button class="home-action-btn" onclick="window.location.href='/Lists/List'">
+            Create My List
+        </button>
     </div>
 
-    <h4 class="text-center">Popular Items</h4>
+    
 
-    <div class="popularButtons d-flex flex-wrap justify-content-center gap-3">
-        <button type="button" onclick="window.location.href='/ProductPages/Listing/ProductListing/calculator'">
-            <img src="/images/calculator.png" />
-            <p>Calculator</p>
-        </button>
-        <button type="button" onclick="window.location.href='/ProductPages/Listing/ProductListing/notebook'">
+    <!-- Featured Categories -->
+    <h4 class="home-section-title">Featured Categories</h4>
+
+    <div class="d-flex flex-wrap justify-content-center gap-3">
+
+        <button class="category-btn" onclick="window.location.href='/ProductPages/Catalog/Index?category=notebook'">
             <img src="/images/notebook.png" />
             <p>Notebooks</p>
         </button>
-        <button type="button" onclick="window.location.href='/ProductPages/Listing/ProductListing/pencil'">
+
+        <button class="category-btn" onclick="window.location.href='/ProductPages/Catalog/Index?category=pencil'">
             <img src="/images/pencil.png" />
-            <p>Pencils</p>
+            <p>Writing</p>
         </button>
-        <button type="button" onclick="window.location.href='/ProductPages/Listing/ProductListing/backpack'">
+
+        <button class="category-btn" onclick="window.location.href='/ProductPages/Catalog/Index?category=calculator'">
+            <img src="/images/calculator.png" />
+            <p>Tech</p>
+        </button>
+
+        <button class="category-btn" onclick="window.location.href='/ProductPages/Catalog/Index?category=backpack'">
             <img src="/images/backpack.png" />
             <p>Backpacks</p>
         </button>
-        <button type="button" onclick="window.location.href='/ProductPages/Listing/ProductListing/bottle'">
+
+        <button class="category-btn" onclick="window.location.href='/ProductPages/Catalog/Index?category=bottle'">
             <img src="/images/bottle.png" />
-            <p>Bottles</p>
+            <p>Water Bottles</p>
         </button>
+
+    </div>
+    <!-- How It Works -->
+    <h4 class="home-section-title">How School-ify Works</h4>
+
+    <div class="d-flex flex-wrap justify-content-center gap-4 text-center">
+
+        <div class="hiw-card">
+            <img src="/images/browse.png" />
+            <p><strong>1. Browse Supplies</strong></p>
+            <p>Explore thousands of school essentials.</p>
+        </div>
+
+        <div class="hiw-card">
+            <img src="/images/list.png" />
+            <p><strong>2. Build Your List</strong></p>
+            <p>Create custom lists for any grade.</p>
+        </div>
+
+        <div class="hiw-card">
+            <img src="/images/shop.png" />
+            <p><strong>3. Shop Smarter</strong></p>
+            <p>Compare prices and buy instantly.</p>
+        </div>
+
     </div>
 </div>

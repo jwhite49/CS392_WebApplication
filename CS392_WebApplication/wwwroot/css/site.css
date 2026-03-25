@@ -118,3 +118,109 @@ table, th, td {
         box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15);
         cursor: pointer;
     }
+/* Home Page Action Buttons */
+.home-action-btn {
+    background-color: var(--schoolyellow);
+    border: none;
+    padding: 14px 28px;
+    border-radius: 12px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #333;
+    transition: all 0.25s ease;
+    margin: 0 10px;
+    min-width: 180px;
+}
+
+    .home-action-btn:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 6px 14px rgba(0,0,0,0.15);
+        cursor: pointer;
+    }
+/* How It Works Cards */
+.hiw-card {
+    width: 200px;
+    padding: 15px;
+    border-radius: 12px;
+    background: #fff;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    transition: all 0.25s ease;
+}
+
+    .hiw-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 6px 18px rgba(0,0,0,0.15);
+    }
+
+    .hiw-card img {
+        height: 80px;
+        margin-bottom: 10px;
+    }
+/* Featured Category Buttons */
+.category-btn {
+    background: #fff;
+    border: 2px solid var(--schoolyellow);
+    border-radius: 12px;
+    padding: 12px;
+    width: 200px;
+    transition: all 0.25s ease;
+}
+
+    .category-btn img {
+        height: 150px;
+        margin-bottom: 6px;
+    }
+
+    .category-btn p {
+        margin: 0;
+        font-weight: 600;
+        color: #333;
+    }
+
+    .category-btn:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 6px 18px rgba(0,0,0,0.15);
+        cursor: pointer;
+        background-color: var(--schoolyellow);
+    }
+/* Homepage Section Titles */
+.home-section-title {
+    font-weight: 700;
+    font-size: 1.6rem;
+    margin-top: 40px;
+    margin-bottom: 20px;
+    text-align: center;
+    color: #333;
+}
+/* Navbar alignment helpers */
+.nav-left {
+    display: flex;
+    gap: 15px;
+}
+
+.nav-right {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.navbar .btn-logout {
+    padding: 4px 10px;
+    border-radius: 6px;
+}
+/* Navbar Font Improvements */
+.navbar-nav .nav-link {
+    font-size: 1.15rem;
+    font-weight: 500;
+    color: #333 !important;
+    padding: 8px 14px;
+    border-radius: 8px;
+    transition: all 0.25s ease;
+}
+
+    .navbar-nav .nav-link:hover {
+        background-color: rgba(255, 255, 255, 0.35);
+        color: #000 !important;
+    }
+
