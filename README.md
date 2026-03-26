@@ -7,7 +7,7 @@ Possible shopAPI
 *Ai category search? - jayden
 
 *registration process for school account - jayden 
-*possibly add categories to items
+*possibly add categories to items (INTO NON-SQL)
 
 
 
