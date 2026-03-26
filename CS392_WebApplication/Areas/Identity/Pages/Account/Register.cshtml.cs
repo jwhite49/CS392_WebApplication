@@ -60,6 +60,16 @@ namespace CS392_WebApplication.Areas.Identity.Pages.Account
         public class InputModel
         {
             [Required]
+            [Display(Name = "First Name")]
+            [MaxLength(20)]
+            public string FirstName { get; set; }  // ✅ must be here
+
+            [Required]
+            [Display(Name = "Last Name")]
+            [MaxLength(20)]
+            public string LastName { get; set; }   // ✅ must be here
+
+            [Required]
             [EmailAddress]
             [Display(Name = "Email")]
             public string Email { get; set; }
@@ -103,9 +113,9 @@ namespace CS392_WebApplication.Areas.Identity.Pages.Account
                     {
                         Username = Input.Email,
                         Email = Input.Email,
-                        Password = "managed-by-identity",  // placeholder
-                        FirstName = "",
-                        LastName = ""
+                        Password = "managed-by-identity",
+                        FirstName = Input.FirstName,
+                        LastName = Input.LastName
                     };
                     _userDbContext.User.Add(myUser);
                     await _userDbContext.SaveChangesAsync();
