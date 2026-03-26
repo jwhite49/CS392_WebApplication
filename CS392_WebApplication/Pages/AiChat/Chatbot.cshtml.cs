@@ -29,12 +29,12 @@ namespace CS392_WebApplication.Pages.AiChat
         public List<Products> Product { get; private set; } = new();
 
         [BindProperty]
-        public string SelectedItemId { get; set; }
+        public string? SelectedItemId { get; set; }
 
         [BindProperty]
-        public string UserQuestion { get; set; }
+        public string? UserQuestion { get; set; }
 
-        public string AIResponse { get; private set; }
+        public string? AIResponse { get; private set; }
 
         public bool IsProcessing { get; private set; }
 
@@ -50,26 +50,19 @@ namespace CS392_WebApplication.Pages.AiChat
             {
                 Product = await _context.Products.ToListAsync();
 
-                if (string.IsNullOrWhiteSpace(SelectedItemId))
-                {
-                    ModelState.AddModelError(string.Empty, "Please select a curriculum.");
-                    return Page();
-                }
-
-                var cur = await _context.Products.FindAsync(SelectedItemId);
-                if (cur == null)
-                {
-                    ModelState.AddModelError(string.Empty, "Selected curriculum not found.");
-                    return Page();
-                }
-
                 if (string.IsNullOrWhiteSpace(UserQuestion))
                 {
                     ModelState.AddModelError(string.Empty, "Please enter a question.");
                     return Page();
                 }
 
-                AIResponse = await _ai.SendPromptWithCurriculumAsync(cur, UserQuestion);
+                Products? selectedProduct = null;
+                if (!string.IsNullOrWhiteSpace(SelectedItemId) && int.TryParse(SelectedItemId, out int productId))
+                {
+                    selectedProduct = await _context.Products.FindAsync(productId);
+                }
+
+                AIResponse = await _ai.SendProductAssistantPromptAsync(selectedProduct, UserQuestion, Product);
                 return Page();
             }
             catch (System.Exception ex)

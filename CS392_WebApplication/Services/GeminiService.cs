@@ -77,16 +77,14 @@ namespace CS392_WebApplication.Services
             }
         }
 
-        public async Task<string> SendCurriculumAsync(Products prod)
+        public async Task<string> SendProductSummaryAsync(Products prod)
         {
             if (prod == null) throw new ArgumentNullException(nameof(prod));
 
             var userPrompt = new[]
             {
-                new { role = "system", content = "You are a precise JSON-output assistant. Return only valid JSON, no extra commentary." },
-                new { role = "user", content = "Given the curriculum JSON below, return a JSON object with: department_id, Dname, major_name, catalog_year, total_credits, sections_count, first_three_course_names (array)." },
-                //Prompt for ai to perform
-                new { role = "user", content = JsonSerializer.Serialize(prod, new JsonSerializerOptions { DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull }) }
+                new { role = "system", content = "You are a helpful shopping assistant. Provide a brief, friendly summary of the product." },
+                new { role = "user", content = $"Summarize this product for a customer: {prod.product_name} - {prod.description}. Price: ${prod.retail_price:F2}. Rating: {prod.rating?.ToString("F1") ?? "N/A"} stars." }
             };
 
             var promptText = BuildPromptFromMessages(userPrompt);
@@ -117,7 +115,7 @@ namespace CS392_WebApplication.Services
                 throw new InvalidOperationException($"Gemini API error: {resp.StatusCode} - {respText}");
             }
 
-                    return ExtractGeminiText(respText, _logger);
+            return ExtractGeminiText(respText, _logger);
         }
 
         public async Task<string> AskGeminiAsync(string prompt)
@@ -154,16 +152,48 @@ namespace CS392_WebApplication.Services
             return ExtractGeminiText(respText, _logger);
         }
 
-        public async Task<string> SendPromptWithCurriculumAsync(Products prod, string userQuestion)
+        public async Task<string> SendProductAssistantPromptAsync(Products? selectedProduct, string userQuestion, List<Products>? allProducts = null)
         {
-            if (prod == null) throw new ArgumentNullException(nameof(prod));
             if (string.IsNullOrWhiteSpace(userQuestion)) throw new ArgumentNullException(nameof(userQuestion));
+
+            var systemPrompt = @"You are a helpful shopping assistant for a school supplies catalog. 
+Your role is to help customers find the right products, answer questions about product features, 
+prices, ratings, and provide recommendations. Be friendly, concise, and helpful.
+If a specific product is provided, focus your answer on that product.
+If no specific product is selected, provide general guidance based on the user's question.";
+
+            var contextBuilder = new StringBuilder();
+            contextBuilder.AppendLine("[system] " + systemPrompt);
+            contextBuilder.AppendLine();
+            
+            if (selectedProduct != null)
+            {
+                contextBuilder.AppendLine("[context] Selected Product:");
+                contextBuilder.AppendLine($"- Name: {selectedProduct.product_name}");
+                contextBuilder.AppendLine($"- Description: {selectedProduct.description}");
+                contextBuilder.AppendLine($"- Price: ${selectedProduct.retail_price:F2}");
+                if (selectedProduct.rating.HasValue)
+                    contextBuilder.AppendLine($"- Rating: {selectedProduct.rating.Value:F1} stars");
+                if (selectedProduct.reviews.HasValue)
+                    contextBuilder.AppendLine($"- Reviews: {selectedProduct.reviews.Value}");
+                contextBuilder.AppendLine($"- Source: {selectedProduct.source_name}");
+                contextBuilder.AppendLine($"- Bulk Available: {(selectedProduct.bulk_availability ? "Yes" : "No")}");
+                contextBuilder.AppendLine();
+            }
+            else if (allProducts != null && allProducts.Count > 0)
+            {
+                contextBuilder.AppendLine("[context] Available product categories in our catalog:");
+                var sampleProducts = allProducts.Take(10).Select(p => $"- {p.product_name} (${p.retail_price:F2})");
+                contextBuilder.AppendLine(string.Join("\n", sampleProducts));
+                contextBuilder.AppendLine($"... and {allProducts.Count} total products in catalog");
+                contextBuilder.AppendLine();
+            }
+            
+            contextBuilder.AppendLine($"[user] {userQuestion}");
 
             var messages = new[]
             {
-                new { role = "system", content = "You are a helpful assistant that answers questions about curriculum data. Be concise." },
-                new { role = "user", content = userQuestion },
-                new { role = "user", content = JsonSerializer.Serialize(prod, new JsonSerializerOptions { DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull }) }
+                new { role = "user", content = contextBuilder.ToString() }
             };
 
             var promptText = BuildPromptFromMessages(messages);

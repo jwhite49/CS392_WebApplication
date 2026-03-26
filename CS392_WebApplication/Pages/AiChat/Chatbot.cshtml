@@ -1,33 +1,70 @@
 ﻿@page
 @model CS392_WebApplication.Pages.AiChat.ChatbotModel
 @{
-    ViewData["Title"] = "Curriculum Chatbot";
+    ViewData["Title"] = "Product Assistant";
 }
 
-<h1>Curriculum Chatbot</h1>
+<div class="container mt-4">
+    <h1 class="mb-4">Product Assistant</h1>
+    <p class="text-muted mb-4">Ask questions about products in our catalog. Select a product to get specific information, or ask general questions about school supplies.</p>
 
-<form method="post">
-    <div>
-        <label for="SelectedItemId">Select Item</label>
-        <select asp-for="SelectedItemId" asp-items="@(new Microsoft.AspNetCore.Mvc.Rendering.SelectList(Model.Product, "Id", "major_name"))">
-            <option value="">-- choose --</option>
-        </select>
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <form method="post">
+                        <div class="mb-3">
+                            <label for="SelectedItemId" class="form-label">Select a Product (Optional)</label>
+                            <select asp-for="SelectedItemId" class="form-select" asp-items="@(new Microsoft.AspNetCore.Mvc.Rendering.SelectList(Model.Product, "product_ID", "product_name"))">
+                                <option value="">-- Ask about any product --</option>
+                            </select>
+                            <small class="text-muted">Choose a specific product or leave blank for general questions</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="UserQuestion" class="form-label">Your Question</label>
+                            <textarea asp-for="UserQuestion" class="form-control" rows="4" placeholder="e.g., What are the best features of this product? Is this good for college students? Compare prices..."></textarea>
+                        </div>
+
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary" disabled="@(Model.IsProcessing ? "disabled" : null)">
+                                @(Model.IsProcessing ? "Processing..." : "Ask Assistant")
+                            </button>
+                        </div>
+
+                        <div asp-validation-summary="All" class="text-danger mt-3"></div>
+                    </form>
+                </div>
+            </div>
+
+            @if (!string.IsNullOrEmpty(Model.AIResponse))
+            {
+                <div class="card mt-4 shadow-sm">
+                    <div class="card-header bg-success text-white">
+                        <strong>Assistant Response</strong>
+                    </div>
+                    <div class="card-body">
+                        <div style="white-space: pre-wrap;">@Model.AIResponse</div>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <div class="col-md-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-info text-white">
+                    <strong>Example Questions</strong>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled mb-0">
+                        <li class="mb-2">"What makes this product a good choice?"</li>
+                        <li class="mb-2">"Is this suitable for elementary school?"</li>
+                        <li class="mb-2">"What are similar alternatives?"</li>
+                        <li class="mb-2">"Is this product good value for money?"</li>
+                        <li class="mb-2">"What should I know before buying?"</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
     </div>
-
-    <div>
-        <label for="UserQuestion">Question about the selected item</label><br />
-        <textarea asp-for="UserQuestion" rows="4" cols="80"></textarea>
-    </div>
-
-    <div>
-        <button type="submit" disabled="@(Model.IsProcessing ? "disabled" : null)">Ask</button>
-    </div>
-
-    <div asp-validation-summary="All"></div>
-</form>
-
-@if (!string.IsNullOrEmpty(Model.AIResponse))
-{
-    <h2>AI Response</h2>
-    <pre>@Model.AIResponse</pre>
-}
+</div>
