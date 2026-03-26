@@ -31,19 +31,19 @@ namespace CS392_WebApplication.Pages.ProductPages.Catalog
             _serpApiService = serpApiService;
         }
 
-        public IList<Products> Products { get; set; }
+        public IList<Products> Products { get; set; } = new List<Products>();
 
         // Sorting
         [BindProperty(SupportsGet = true)]
-        public string Sort { get; set; }
+        public string? Sort { get; set; }
 
         // Search
         [BindProperty(SupportsGet = true)]
-        public string Search { get; set; }
+        public string? Search { get; set; }
 
         // Category filter
         [BindProperty(SupportsGet = true)]
-        public string Category { get; set; }
+        public string? Category { get; set; }
 
         // Pagination
         [BindProperty(SupportsGet = true)]
@@ -164,6 +164,65 @@ namespace CS392_WebApplication.Pages.ProductPages.Catalog
                 .Skip((PageNumber - 1) * PageSize)
                 .Take(PageSize)
                 .ToListAsync();
+
+            //API INGESTION - Only call API if no products found in database for this search
+            if (!string.IsNullOrEmpty(Search) && !Products.Any())
+            {
+                var apiProducts = new List<Products>();
+                var results = _serpApiService.SearchProducts(Search);
+
+                int resultLimit = 0;
+
+                foreach (JObject result in results ?? new JArray())
+                {
+                    if (resultLimit >= 20)
+                        break;
+
+                    var product = new Products
+                    {
+                        product_name = result["title"]?.ToString()?[..Math.Min(result["title"]?.ToString()?.Length ?? 0, 50)] ?? "",
+                        description = result["description"]?.ToString() ?? "",
+                        retail_URL = result["serpapi_link"]?.ToString() ?? "",
+                        ImageURL = result["thumbnail"]?.ToString() ?? "",
+                        source_name = result["source"]?.ToString(),
+                        source_logo = result["source_icon"]?.ToString(),
+                        rating = result["rating"]?.ToObject<double?>(),
+                        reviews = result["reviews"]?.ToObject<int?>(),
+                    };
+
+                    if (double.TryParse(result["extracted_price"]?.ToString(), out double retailPrice))
+                        product.retail_price = retailPrice;
+                    else
+                        product.retail_price = 0;
+
+                    apiProducts.Add(product);
+                    resultLimit++;
+                }
+
+                if (apiProducts.Any())
+                {
+                    _productsContext.Products.AddRange(apiProducts);
+                    await _productsContext.SaveChangesAsync();
+
+                    // Remove duplicate products
+                    var allProducts = await _productsContext.Products.ToListAsync();
+                    var duplicates = allProducts
+                        .GroupBy(p => p.product_name)
+                        .Where(g => g.Count() > 1)
+                        .SelectMany(g => g.OrderBy(p => p.product_ID).Skip(1))
+                        .ToList();
+
+                    if (duplicates.Any())
+                    {
+                        _productsContext.Products.RemoveRange(duplicates);
+                        await _productsContext.SaveChangesAsync();
+                    }
+
+                    // Reload Products list with newly saved API results
+                    Products = apiProducts;
+                    TotalItems = apiProducts.Count;
+                }
+            }
         }
     }
 }
