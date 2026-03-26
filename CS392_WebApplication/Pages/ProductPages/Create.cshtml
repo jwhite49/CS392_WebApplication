@@ -1,0 +1,59 @@
+﻿@page
+@model CS392_WebApplication.Pages.ProductPages.CreateModel
+
+@{
+    ViewData["Title"] = "Create";
+}
+
+<h1>Create</h1>
+
+<h4>Products</h4>
+<hr />
+<div class="row">
+    <div class="col-md-4">
+        <form method="post">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <div class="form-group">
+                <span class="text-danger">*</span>
+                <label asp-for="Products.product_name" class="control-label"></label>
+                <input asp-for="Products.product_name" class="form-control" aria-required="true"/>
+                <span asp-validation-for="Products.product_name" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <span class="text-danger">*</span>
+                <label asp-for="Products.description" class="control-label"></label>
+                <input asp-for="Products.description" class="form-control" aria-required="true"/>
+                <span asp-validation-for="Products.description" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <span class="text-danger">*</span>
+                <label asp-for="Products.retail_price" class="control-label"></label>
+                <input asp-for="Products.retail_price" class="form-control" aria-required="true"/>
+                <span asp-validation-for="Products.retail_price" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <span class="text-danger">*</span>
+                <label asp-for="Products.retail_URL" class="control-label"></label>
+                <input asp-for="Products.retail_URL" class="form-control" aria-required="true"/>
+                <span asp-validation-for="Products.retail_URL" class="text-danger"></span>
+            </div>
+            <div class="form-group form-check">
+                <span class="text-danger">*</span>
+                <label class="form-check-label">
+                    <input class="form-check-input" asp-for="Products.bulk_availability" aria-required="true"/> @Html.DisplayNameFor(model => model.Products.bulk_availability)
+                </label>
+            </div>
+            <div class="form-group">
+                <input type="submit" value="Create" class="btn btn-primary" />
+            </div>
+        </form>
+    </div>
+</div>
+
+<div>
+    <a asp-page="Index">Back to List</a>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

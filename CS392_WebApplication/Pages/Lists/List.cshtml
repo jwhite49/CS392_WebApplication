@@ -1,0 +1,110 @@
+﻿@page
+@model CS392_WebApplication.Pages.Lists.ListModel
+@{
+    ViewData["Title"] = "My List";
+}
+
+<h2 class="mb-4">My Product List</h2>
+
+<!-- SUCCESS / ERROR MESSAGES -->
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success">@TempData["SuccessMessage"]</div>
+}
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger">@TempData["ErrorMessage"]</div>
+}
+
+@if (!Model.HasList)
+{
+    <div class="alert alert-info">
+        <strong>You don't have a list yet.</strong><br />
+        Create your first list to start adding products!
+    </div>
+
+    <a class="btn btn-primary" href="/Lists/Create">
+        Create New List
+    </a>
+}
+else
+{
+    <!-- Analytics / Overview -->
+    <div class="card shadow-sm mb-4" style="max-width: 700px;">
+        <div class="card-body">
+            <h4 class="card-title">List Overview</h4>
+
+            <p class="text-muted mb-1">
+                Created: @Model.UserList.created_at.ToShortDateString()
+            </p>
+
+            <p class="mb-1">
+                <strong>Total Price:</strong>
+                $@Model.UserList.total_price.ToString("0.00")
+            </p>
+
+            <p class="mb-0">
+                <strong>Total Items:</strong> @Model.ListItems.Count
+            </p>
+        </div>
+    </div>
+
+    <!-- Items in the list -->
+    <h4 class="mb-3">Items in Your List</h4>
+
+    @if (Model.ListItems.Count == 0)
+    {
+        <p class="text-muted">Your list is currently empty.</p>
+    }
+    else
+    {
+        <div class="row g-3">
+            @foreach (var entry in Model.ListItems)
+            {
+                var item = entry.Item;
+                var product = entry.Product;
+
+                <div class="col-md-6">
+                    <div class="card shadow-sm h-100">
+                        <div class="row g-0">
+                            <div class="col-4">
+                                <img src="@product.ImageURL"
+                                     class="img-fluid rounded-start"
+                                     alt="@product.product_name" />
+                            </div>
+                            <div class="col-8">
+                                <div class="card-body">
+                                    <h5 class="card-title">@product.product_name</h5>
+
+                                    <p class="card-text mb-1">
+                                        <strong>Price at Add:</strong>
+                                        $@item.price_at_purchase.ToString("0.00")
+                                    </p>
+
+                                    <p class="card-text mb-1">
+                                        <strong>Quantity:</strong> @item.quantity
+                                    </p>
+
+                                    <a href="@product.retail_URL"
+                                       class="btn btn-sm btn-outline-primary"
+                                       target="_blank">
+                                        View Product
+                                    </a>
+
+                                    <!-- DROP BUTTON -->
+                                    <form method="post" asp-page-handler="DeleteItem" class="mt-2">
+                                        <input type="hidden" name="listItemId" value="@item.list_items_ID" />
+                                        <button class="btn btn-sm btn-danger">
+                                            Remove
+                                        </button>
+                                    </form>
+
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+}

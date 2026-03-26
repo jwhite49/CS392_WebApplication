@@ -1,0 +1,54 @@
+﻿@page
+@model CS392_WebApplication.Pages.Product_List_Pages.IndexModel
+
+@{
+    ViewData["Title"] = "Index";
+}
+
+<h1>Index</h1>
+
+<p>
+    <a asp-page="Create">Create New</a>
+</p>
+<table class="table">
+    <thead>
+        <tr>
+            <th>
+                @Html.DisplayNameFor(model => model.Product_list[0].userID)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Product_list[0].total_price)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Product_list[0].list_type)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Product_list[0].created_at)
+            </th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+@foreach (var item in Model.Product_list) {
+        <tr>
+            <td>
+                @Html.DisplayFor(modelItem => item.userID)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.total_price)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.list_type)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.created_at)
+            </td>
+            <td>
+                <a asp-page="./Edit" asp-route-id="@item.listID">Edit</a> |
+                <a asp-page="./Details" asp-route-id="@item.listID">Details</a> |
+                <a asp-page="./Delete" asp-route-id="@item.listID">Delete</a>
+            </td>
+        </tr>
+}
+    </tbody>
+</table>

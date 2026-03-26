@@ -1,0 +1,33 @@
+﻿@page
+@model CS392_WebApplication.Pages.AiChat.ChatbotModel
+@{
+    ViewData["Title"] = "Curriculum Chatbot";
+}
+
+<h1>Curriculum Chatbot</h1>
+
+<form method="post">
+    <div>
+        <label for="SelectedItemId">Select Item</label>
+        <select asp-for="SelectedItemId" asp-items="@(new Microsoft.AspNetCore.Mvc.Rendering.SelectList(Model.Product, "Id", "major_name"))">
+            <option value="">-- choose --</option>
+        </select>
+    </div>
+
+    <div>
+        <label for="UserQuestion">Question about the selected item</label><br />
+        <textarea asp-for="UserQuestion" rows="4" cols="80"></textarea>
+    </div>
+
+    <div>
+        <button type="submit" disabled="@(Model.IsProcessing ? "disabled" : null)">Ask</button>
+    </div>
+
+    <div asp-validation-summary="All"></div>
+</form>
+
+@if (!string.IsNullOrEmpty(Model.AIResponse))
+{
+    <h2>AI Response</h2>
+    <pre>@Model.AIResponse</pre>
+}

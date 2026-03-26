@@ -1,0 +1,70 @@
+This file is for API integration steps and etc
+
+SerpAPI - Uses google account and gives a API key
+
+add SerpAPI package to workspace 
+* cd (file directory) && dotnet add package SerpApi
+* dotnet add package google-search-results-dotnet
+
+API/apiConfig.cs - 
+* holds api key and calling structure for API
+* Constructs a loop that goes extracts all results and writes them in console
+* Builds API parameters 
+* sends serp request 
+* returns product results as JSON
+
+Data/ProductsDbContext -  
+* connects to database through this context 
+
+Services/ProductService.cs - 
+* calls API
+* converts results to models 
+* saves models to database 
+
+
+Lines in Program.cs - 
+* allows asp.net to inject services into controllers 
+
+Models/APIProducts (or products table) 
+
+--------------------
+API flows as such
+    -------
+Client Request
+GET /api/products/search?query=coffee
+        │
+        ▼
+ProductController
+        │
+        ▼
+ProductService
+        │
+        ▼
+SerpApiService
+        │
+        ▼
+External API request
+        │
+        ▼
+Results returned
+        │
+        ▼
+Saved to database
+        │
+        ▼
+Returned to controller
+        │
+        ▼
+JSON response sent to client
+--------------------
+
+Example api response 
+[
+  {
+    "title": "Dell XPS 13 Laptop",
+    "price": 999.99,
+    "source": "Amazon",
+    "link": "https://amazon.com/...",
+    "thumbnail": "https://image..."
+  }
+]
