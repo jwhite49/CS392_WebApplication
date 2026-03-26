@@ -1,8 +1,8 @@
 Next steps for project (3-5-2026) 
 
 *Check list feature 
-*Ai category search?
-
+*Ai category search? - jayden
+*registration process for school account - jayden 
 
 
 Ideas: 
