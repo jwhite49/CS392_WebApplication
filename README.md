@@ -1,5 +1,7 @@
 Next steps for project (3-5-2026) 
 
+Possible shopAPI
+
 *Check list feature 
 
 *Ai category search? - jayden
