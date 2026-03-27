@@ -20,41 +20,61 @@
                 @Html.DisplayNameFor(model => model.User[0].Email)
             </th>
             <th>
-                @Html.DisplayNameFor(model => model.User[0].Password)
-            </th>
-            <th>
                 @Html.DisplayNameFor(model => model.User[0].FirstName)
             </th>
             <th>
                 @Html.DisplayNameFor(model => model.User[0].LastName)
             </th>
+            <th>Role</th>  @* ✅ added *@
             <th></th>
         </tr>
     </thead>
     <tbody>
-@foreach (var item in Model.User) {
-        <tr>
-            <td>
-                @Html.DisplayFor(modelItem => item.Username)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.Email)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.Password)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.FirstName)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.LastName)
-            </td>
-            <td>
-                <a asp-page="./Edit" asp-route-id="@item.UserID">Edit</a> |
-                <a asp-page="./Details" asp-route-id="@item.UserID">Details</a> |
-                <a asp-page="./Delete" asp-route-id="@item.UserID">Delete</a>
-            </td>
-        </tr>
-}
+        @foreach (var item in Model.User)
+        {
+            <tr>
+                <td>
+                    @Html.DisplayFor(modelItem => item.Username)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.Email)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.FirstName)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.LastName)
+                </td>
+
+                @* ✅ Look up role from dictionary by email *@
+                <td>
+                    @if (Model.UserRoles.TryGetValue(item.Email, out var role))
+                    {
+                        @if (role == "Admin")
+                        {
+                            <span class="badge bg-danger">@role</span>
+                        }
+                        else if (role == "School")
+                        {
+                            <span class="badge bg-warning text-dark">@role</span>
+                        }
+                        else if (role == "User")
+                        {
+                            <span class="badge bg-primary">@role</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-secondary">@role</span>
+                        }
+                    }
+                </td>
+
+                <td>
+                    <a asp-page="./Edit" asp-route-id="@item.UserID">Edit</a> |
+                    <a asp-page="./Details" asp-route-id="@item.UserID">Details</a> |
+                    <a asp-page="./Delete" asp-route-id="@item.UserID">Delete</a>
+                </td>
+            </tr>
+        }
     </tbody>
 </table>

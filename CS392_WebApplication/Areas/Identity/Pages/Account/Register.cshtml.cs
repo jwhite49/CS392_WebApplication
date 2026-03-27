@@ -118,6 +118,7 @@ namespace CS392_WebApplication.Areas.Identity.Pages.Account
                         LastName = Input.LastName
                     };
                     _userDbContext.User.Add(myUser);
+                    await _userManager.AddToRoleAsync(user, "User");
                     await _userDbContext.SaveChangesAsync();
 
                     var userId = await _userManager.GetUserIdAsync(user);
