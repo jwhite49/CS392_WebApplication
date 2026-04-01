@@ -1,0 +1,41 @@
+@page
+@model CS392_WebApplication.Pages.TeacherRequestModel
+@{
+    ViewData["Title"] = "Request Teacher Account";
+}
+
+<div class="container mt-4" style="max-width: 600px;">
+    <h2 class="mb-1">Request a Teacher Account</h2>
+    <p class="text-muted mb-4">Fill out the form below. An admin will review and approve your request.</p>
+
+    <form method="post">
+        @Html.AntiForgeryToken()
+
+        <div class="mb-3">
+            <label asp-for="SchoolName" class="form-label fw-semibold">School Name</label>
+            <input asp-for="SchoolName" class="form-control" placeholder="e.g. Lincoln Elementary" />
+            <span asp-validation-for="SchoolName" class="text-danger"></span>
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="SchoolEmail" class="form-label fw-semibold">School Email</label>
+            <input asp-for="SchoolEmail" class="form-control" placeholder="you@school.edu" />
+            <span asp-validation-for="SchoolEmail" class="text-danger"></span>
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="Grade" class="form-label fw-semibold">Grade You Teach</label>
+            <input asp-for="Grade" class="form-control" placeholder="e.g. 3rd, K, 9-12" />
+            <span asp-validation-for="Grade" class="text-danger"></span>
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="SchoolDistrict" class="form-label fw-semibold">School District</label>
+            <input asp-for="SchoolDistrict" class="form-control" placeholder="e.g. Springfield Unified School District" />
+            <span asp-validation-for="SchoolDistrict" class="text-danger"></span>
+        </div>
+
+        <button type="submit" class="home-action-btn">Submit Request</button>
+        <a href="/" class="btn btn-link ms-2">Cancel</a>
+    </form>
+</div>
