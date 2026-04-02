@@ -5,7 +5,10 @@ Possible shopAPI
 *Check list feature 
 
 *Ai category search? - jayden
+
 *School users can publish lists, regular users can add them. - Kellen
+
+*School users should see what students added their lists and their status on purchasing - Kellen
 
 *registration process for school account - jayden 
 *possibly add categories to items (INTO NON-SQL)
