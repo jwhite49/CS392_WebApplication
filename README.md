@@ -1,13 +1,14 @@
-Next steps for project (3-5-2026) 
+Next steps for project (3-31-2026) 
 
 Possible shopAPI
 
 *Check list feature 
 
 *Ai category search? - jayden
+*School users can publish lists, regular users can add them. - Kellen
 
 *registration process for school account - jayden 
-*possibly add categories to items
+*possibly add categories to items (INTO NON-SQL)
 
 
 
