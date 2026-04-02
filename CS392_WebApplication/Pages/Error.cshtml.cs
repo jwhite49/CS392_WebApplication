@@ -12,6 +12,10 @@ namespace CS392_WebApplication.Pages
 
         public bool ShowRequestId => !string.IsNullOrEmpty(RequestId);
 
+        public string? ErrorMessage { get; set; }
+
+        public string? ErrorDetails { get; set; }
+
         private readonly ILogger<ErrorModel> _logger;
 
         public ErrorModel(ILogger<ErrorModel> logger)
@@ -22,6 +26,8 @@ namespace CS392_WebApplication.Pages
         public void OnGet()
         {
             RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier;
+            ErrorMessage = TempData["ErrorMessage"] as string;
+            ErrorDetails = TempData["ErrorDetails"] as string;
         }
     }
 

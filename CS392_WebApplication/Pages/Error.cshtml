@@ -25,6 +25,22 @@
         }
     </div>
 
+    @if (!string.IsNullOrEmpty(Model.ErrorDetails))
+    {
+        <div class="mx-auto mt-3" style="max-width: 600px;">
+            <button class="btn btn-outline-secondary btn-sm" type="button"
+                    onclick="document.getElementById('errorDetails').classList.toggle('d-none');">
+                See Details
+            </button>
+            <div id="errorDetails" class="d-none mt-3 text-start">
+                <div class="alert alert-danger">
+                    <strong>Error:</strong> @Model.ErrorMessage
+                </div>
+                <pre class="bg-dark text-light p-3 rounded small" style="white-space: pre-wrap; word-break: break-word;">@Model.ErrorDetails</pre>
+            </div>
+        </div>
+    }
+
     <a href="/" class="btn btn-primary mt-4 px-4">
         Return to Home
     </a>

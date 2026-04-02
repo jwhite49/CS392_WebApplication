@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using System.Threading.Tasks;
 using CS392_WebApplication.Data;
 using CS392_WebApplication.Models;
@@ -37,6 +38,13 @@ public class GlobalExceptionMiddleware
 
             logContext.SystemLog.Add(log);
             await logContext.SaveChangesAsync();
+
+            // Store error details in TempData so the error page can display them
+            var tempDataFactory = context.RequestServices.GetRequiredService<ITempDataDictionaryFactory>();
+            var tempData = tempDataFactory.GetTempData(context);
+            tempData["ErrorMessage"] = ex.Message;
+            tempData["ErrorDetails"] = ex.ToString();
+            tempData.Save();
 
             // Redirect to custom error page
             context.Response.Redirect("/Error");
