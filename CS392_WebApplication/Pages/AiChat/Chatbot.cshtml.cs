@@ -1,35 +1,30 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using CS392_WebApplication.Models;
 using CS392_WebApplication.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Logging;
-using Microsoft.EntityFrameworkCore;
 
 namespace CS392_WebApplication.Pages.AiChat
 {
     public class ChatbotModel : PageModel
     {
-        //private readonly MongoDBService _mongo;
-        private readonly ProductsDbContext _context;
-
+        private readonly MongoDBService _mongo;
         private readonly GeminiService _ai;
         private readonly ILogger<ChatbotModel> _logger;
 
-        public ChatbotModel(GeminiService ai, ILogger<ChatbotModel> logger, ProductsDbContext context)
+        public ChatbotModel(GeminiService ai, ILogger<ChatbotModel> logger, MongoDBService mongo)
         {
-            //_mongo = mongo;
+            _mongo = mongo;
             _ai = ai;
             _logger = logger;
-            _context = context;
         }
 
-        public List<Products> Product { get; private set; } = new();
+        public Dictionary<string, List<string>> Catalog { get; private set; } = new();
 
         [BindProperty]
-        public string? SelectedItemId { get; set; }
+        public string? SelectedCategory { get; set; }
 
         [BindProperty]
         public string? UserQuestion { get; set; }
@@ -40,7 +35,7 @@ namespace CS392_WebApplication.Pages.AiChat
 
         public async Task OnGetAsync()
         {
-            Product = await _context.Products.ToListAsync();
+            Catalog = await _mongo.GetCatalogAsync();
         }
 
         public async Task<IActionResult> OnPostAsync()
@@ -48,7 +43,7 @@ namespace CS392_WebApplication.Pages.AiChat
             IsProcessing = true;
             try
             {
-                Product = await _context.Products.ToListAsync();
+                Catalog = await _mongo.GetCatalogAsync();
 
                 if (string.IsNullOrWhiteSpace(UserQuestion))
                 {
@@ -56,13 +51,11 @@ namespace CS392_WebApplication.Pages.AiChat
                     return Page();
                 }
 
-                Products? selectedProduct = null;
-                if (!string.IsNullOrWhiteSpace(SelectedItemId) && int.TryParse(SelectedItemId, out int productId))
-                {
-                    selectedProduct = await _context.Products.FindAsync(productId);
-                }
+                List<string>? categoryItems = null;
+                if (!string.IsNullOrWhiteSpace(SelectedCategory) && Catalog.TryGetValue(SelectedCategory, out var items))
+                    categoryItems = items;
 
-                AIResponse = await _ai.SendProductAssistantPromptAsync(selectedProduct, UserQuestion, Product);
+                AIResponse = await _ai.SendCategoryAssistantPromptAsync(SelectedCategory, categoryItems, UserQuestion, Catalog);
                 return Page();
             }
             catch (System.Exception ex)

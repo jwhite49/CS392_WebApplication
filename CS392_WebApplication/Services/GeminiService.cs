@@ -152,51 +152,34 @@ namespace CS392_WebApplication.Services
             return ExtractGeminiText(respText, _logger);
         }
 
-        public async Task<string> SendProductAssistantPromptAsync(Products? selectedProduct, string userQuestion, List<Products>? allProducts = null)
+        public async Task<string> SendCategoryAssistantPromptAsync(string? selectedCategory, List<string>? categoryItems, string userQuestion, Dictionary<string, List<string>>? fullCatalog = null)
         {
             if (string.IsNullOrWhiteSpace(userQuestion)) throw new ArgumentNullException(nameof(userQuestion));
 
             var systemPrompt = @"You are a helpful shopping assistant for a school supplies catalog. 
-Your role is to help customers find the right products, answer questions about product features, 
-prices, ratings, and provide recommendations. Be friendly, concise, and helpful.
-If a specific product is provided, focus your answer on that product.
-If no specific product is selected, provide general guidance based on the user's question.";
+Your role is to help customers find the right type of supplies based on their needs.
+You know the categories and item types available in the catalog.
+Be friendly, concise, and helpful. Suggest what types of items the user should look for.";
 
             var contextBuilder = new StringBuilder();
             contextBuilder.AppendLine("[system] " + systemPrompt);
             contextBuilder.AppendLine();
-            
-            if (selectedProduct != null)
+
+            if (!string.IsNullOrEmpty(selectedCategory) && categoryItems != null && categoryItems.Count > 0)
             {
-                contextBuilder.AppendLine("[context] Selected Product:");
-                contextBuilder.AppendLine($"- Name: {selectedProduct.product_name}");
-                contextBuilder.AppendLine($"- Description: {selectedProduct.description}");
-                contextBuilder.AppendLine($"- Price: ${selectedProduct.retail_price:F2}");
-                if (selectedProduct.rating.HasValue)
-                    contextBuilder.AppendLine($"- Rating: {selectedProduct.rating.Value:F1} stars");
-                if (selectedProduct.reviews.HasValue)
-                    contextBuilder.AppendLine($"- Reviews: {selectedProduct.reviews.Value}");
-                contextBuilder.AppendLine($"- Source: {selectedProduct.source_name}");
-                contextBuilder.AppendLine($"- Bulk Available: {(selectedProduct.bulk_availability ? "Yes" : "No")}");
+                contextBuilder.AppendLine($"[context] The user is browsing the '{selectedCategory}' category.");
+                contextBuilder.AppendLine($"Items available in this category: {string.Join(", ", categoryItems)}");
                 contextBuilder.AppendLine();
             }
-            else if (allProducts != null && allProducts.Count > 0)
+            else if (fullCatalog != null && fullCatalog.Count > 0)
             {
-                contextBuilder.AppendLine("[context] Available product categories in our catalog:");
-                var sampleProducts = allProducts.Take(10).Select(p => $"- {p.product_name} (${p.retail_price:F2})");
-                contextBuilder.AppendLine(string.Join("\n", sampleProducts));
-                contextBuilder.AppendLine($"... and {allProducts.Count} total products in catalog");
+                contextBuilder.AppendLine("[context] Available supply categories in our catalog:");
+                foreach (var kvp in fullCatalog)
+                    contextBuilder.AppendLine($"- {kvp.Key}: {string.Join(", ", kvp.Value.Take(4))}{(kvp.Value.Count > 4 ? "..." : "")}");
                 contextBuilder.AppendLine();
             }
-            
+
             contextBuilder.AppendLine($"[user] {userQuestion}");
-
-            var messages = new[]
-            {
-                new { role = "user", content = contextBuilder.ToString() }
-            };
-
-            var promptText = BuildPromptFromMessages(messages);
 
             var payload = new
             {
@@ -206,7 +189,7 @@ If no specific product is selected, provide general guidance based on the user's
                     {
                         parts = new[]
                         {
-                            new { text = promptText }
+                            new { text = contextBuilder.ToString() }
                         }
                     }
                 }

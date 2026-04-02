@@ -38,6 +38,7 @@ builder.Services.AddScoped<apiConfig>();
 builder.Services.AddScoped<ProductService>();
 builder.Services.AddScoped<SignInManager<IdentityUser>, LoggingSignInManager>();
 builder.Services.AddHttpClient<GeminiService>();
+builder.Services.AddSingleton<MongoDBService>();
 
 //If APIController needs ProductService
 //→ create one and pass it in
