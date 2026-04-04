@@ -27,5 +27,17 @@ namespace CS392_WebApplication.Models
 
         [Column("purchase_type")]
         public PurchaseType purchase_type { get; set; }
+
+        // NEW — teacher-defined metadata for published lists
+        [Column("is_required")]
+        public bool is_required { get; set; } = true;
+
+        [Column("teacher_note")]
+        [MaxLength(300)]
+        public string? teacher_note { get; set; }
+
+        // NEW — recommended quantity for students
+        [Column("recommended_quantity")]
+        public int? recommended_quantity { get; set; }
     }
 }

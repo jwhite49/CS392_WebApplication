@@ -34,13 +34,35 @@ namespace CS392_WebApplication.Migrations
                         .HasColumnType("datetime2")
                         .HasColumnName("created_at");
 
+                    b.Property<string>("description")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)")
+                        .HasColumnName("description");
+
+                    b.Property<string>("grade_level")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("grade_level");
+
+                    b.Property<bool>("is_published")
+                        .HasColumnType("bit")
+                        .HasColumnName("is_published");
+
                     b.Property<int>("list_type")
                         .HasColumnType("int")
                         .HasColumnName("list_type");
 
+                    b.Property<string>("title")
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)")
+                        .HasColumnName("title");
+
                     b.Property<double>("total_price")
                         .HasColumnType("float")
                         .HasColumnName("total_price");
+
+                    b.Property<DateTime>("updated_at")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("updated_at");
 
                     b.Property<int>("userID")
                         .HasColumnType("int")
@@ -49,6 +71,53 @@ namespace CS392_WebApplication.Migrations
                     b.HasKey("listID");
 
                     b.ToTable("Product_list");
+                });
+
+            modelBuilder.Entity("CS392_WebApplication.Models.Product_list_items", b =>
+                {
+                    b.Property<int>("list_items_ID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("list_itemsID");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("list_items_ID"));
+
+                    b.Property<bool>("is_required")
+                        .HasColumnType("bit")
+                        .HasColumnName("is_required");
+
+                    b.Property<int>("list_ID")
+                        .HasColumnType("int")
+                        .HasColumnName("listID");
+
+                    b.Property<float>("price_at_purchase")
+                        .HasColumnType("real")
+                        .HasColumnName("price_at_purchase");
+
+                    b.Property<int>("product_ID")
+                        .HasColumnType("int")
+                        .HasColumnName("productID");
+
+                    b.Property<int>("purchase_type")
+                        .HasColumnType("int")
+                        .HasColumnName("purchase_type");
+
+                    b.Property<int>("quantity")
+                        .HasColumnType("int")
+                        .HasColumnName("quantity");
+
+                    b.Property<int?>("recommended_quantity")
+                        .HasColumnType("int")
+                        .HasColumnName("recommended_quantity");
+
+                    b.Property<string>("teacher_note")
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)")
+                        .HasColumnName("teacher_note");
+
+                    b.HasKey("list_items_ID");
+
+                    b.ToTable("Product_list_items");
                 });
 
             modelBuilder.Entity("CS392_WebApplication.Models.Products", b =>
@@ -78,9 +147,9 @@ namespace CS392_WebApplication.Migrations
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("product_name");
 
-                    b.Property<float?>("rating")
-                        .HasColumnType("real")
-                        .HasColumnName("rating");
+                    b.Property<double?>("rating")
+                        .HasColumnType("float")
+                        .HasColumnName("item_rating");
 
                     b.Property<string>("retail_URL")
                         .IsRequired()
@@ -93,12 +162,12 @@ namespace CS392_WebApplication.Migrations
 
                     b.Property<int?>("reviews")
                         .HasColumnType("int")
-                        .HasColumnName("reviews");
+                        .HasColumnName("item_reviews");
 
-                    b.Property<string>("sample_Review")
+                    b.Property<string>("sample_review")
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)")
-                        .HasColumnName("sample Review");
+                        .HasColumnName("sample_review");
 
                     b.Property<string>("source_logo")
                         .HasMaxLength(255)

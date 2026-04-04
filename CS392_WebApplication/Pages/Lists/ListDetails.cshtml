@@ -1,0 +1,180 @@
+@page "{listId:int}"
+@model CS392_WebApplication.Pages.Lists.ListDetailsModel
+@{
+    ViewData["Title"] = Model.UserList.title ?? "List Details";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>@(Model.UserList.title ?? "Untitled List")</h2>
+    <a class="btn btn-outline-secondary" asp-page="/Lists/List">&larr; Back to My Lists</a>
+</div>
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        @TempData["SuccessMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        @TempData["ErrorMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+<!-- List Overview Card -->
+<div class="card shadow-sm mb-4" style="max-width: 700px;">
+    <div class="card-body">
+        <h4 class="card-title">List Overview</h4>
+
+        @if (!string.IsNullOrEmpty(Model.UserList.description))
+        {
+            <p class="text-muted">@Model.UserList.description</p>
+        }
+
+        @if (!string.IsNullOrEmpty(Model.UserList.grade_level))
+        {
+            <p class="mb-1"><strong>Grade Level:</strong> @Model.UserList.grade_level</p>
+        }
+
+        <p class="mb-1"><strong>Total Price:</strong> $@Model.UserList.total_price.ToString("0.00")</p>
+        <p class="mb-1"><strong>Total Items:</strong> @Model.ListItems.Count</p>
+        <p class="text-muted mb-1">Created: @Model.UserList.created_at.ToShortDateString()</p>
+
+        @if (Model.UserList.is_published)
+        {
+            <span class="badge bg-success">Published</span>
+        }
+
+        @if (Model.IsReadOnly)
+        {
+            <div class="alert alert-info mt-3 mb-0 py-2">
+                <strong>This list was imported from a published list</strong> and is read-only.
+                You can view items and mark it as completed, but cannot add or remove items.
+                <br />
+                <small class="text-muted">Added on @Model.ImportRecord!.added_at.ToShortDateString()</small>
+            </div>
+
+            <form method="post" asp-page-handler="ToggleComplete" class="mt-2">
+                <input type="hidden" name="listId" value="@Model.UserList.listID" />
+                @if (Model.ImportRecord!.is_completed)
+                {
+                    <button class="btn btn-success">
+                        &#10003; Completed &mdash; Click to Undo
+                    </button>
+                }
+                else
+                {
+                    <button class="btn btn-outline-success">
+                        Mark as Completed
+                    </button>
+                }
+            </form>
+        }
+    </div>
+</div>
+
+<!-- Items -->
+<h4 class="mb-3">Items in This List</h4>
+
+@if (Model.ListItems.Count == 0)
+{
+    <p class="text-muted">This list is currently empty.</p>
+}
+else
+{
+    <div class="row g-3">
+        @foreach (var entry in Model.ListItems)
+        {
+            var item = entry.Item;
+            var product = entry.Product;
+
+            <div class="col-md-6">
+                <div class="card shadow-sm h-100">
+                    <div class="row g-0">
+                        <div class="col-4">
+                            <img src="@product.ImageURL"
+                                 class="img-fluid rounded-start"
+                                 alt="@product.product_name"
+                                 style="object-fit: contain; min-height: 120px;" />
+                        </div>
+                        <div class="col-8">
+                            <div class="card-body">
+                                <h5 class="card-title">@product.product_name</h5>
+
+                                <p class="card-text mb-1">
+                                    <strong>Price:</strong>
+                                    $@item.price_at_purchase.ToString("0.00")
+                                </p>
+
+                                <!-- Quantity with +/- controls -->
+                                <div class="d-flex align-items-center gap-2 mb-2">
+                                    <strong>Qty:</strong>
+                                    @if (!Model.IsReadOnly)
+                                    {
+                                        <form method="post" asp-page-handler="DecreaseQuantity" class="d-inline">
+                                            <input type="hidden" name="listItemId" value="@item.list_items_ID" />
+                                            <input type="hidden" name="listId" value="@Model.UserList.listID" />
+                                            <button type="submit" class="btn btn-sm btn-outline-secondary py-0 px-2"
+                                                    @(item.quantity <= 1 ? "disabled" : "")>
+                                                &minus;
+                                            </button>
+                                        </form>
+                                    }
+                                    <span class="fw-bold">@item.quantity</span>
+                                    @if (!Model.IsReadOnly)
+                                    {
+                                        <form method="post" asp-page-handler="IncreaseQuantity" class="d-inline">
+                                            <input type="hidden" name="listItemId" value="@item.list_items_ID" />
+                                            <input type="hidden" name="listId" value="@Model.UserList.listID" />
+                                            <button type="submit" class="btn btn-sm btn-outline-secondary py-0 px-2">
+                                                +
+                                            </button>
+                                        </form>
+                                    }
+                                    @if (item.recommended_quantity.HasValue)
+                                    {
+                                        <span class="text-muted small">(Recommended: @item.recommended_quantity)</span>
+                                    }
+                                </div>
+
+                                @if (item.is_required)
+                                {
+                                    <span class="badge bg-warning text-dark mb-1">Required</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary mb-1">Optional</span>
+                                }
+
+                                @if (!string.IsNullOrEmpty(item.teacher_note))
+                                {
+                                    <div class="mt-1 p-2 bg-light border rounded small">
+                                        <strong>Teacher Note:</strong> @item.teacher_note
+                                    </div>
+                                }
+
+                                <div class="mt-2 d-flex gap-2">
+                                    <a href="/ProductPages/Listing/@product.product_ID"
+                                       class="btn btn-sm btn-outline-primary">
+                                        View Product
+                                    </a>
+                                    @if (!Model.IsReadOnly)
+                                    {
+                                        <form method="post" asp-page-handler="DeleteItem">
+                                            <input type="hidden" name="listItemId" value="@item.list_items_ID" />
+                                            <input type="hidden" name="listId" value="@Model.UserList.listID" />
+                                            <button class="btn btn-sm btn-danger">Remove</button>
+                                        </form>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}

@@ -1,0 +1,224 @@
+@page "{listId:int}"
+@model CS392_WebApplication.Pages.Lists.ManageListModel
+@{
+    ViewData["Title"] = "Manage List";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Manage: @(Model.ManagedList.title ?? "Untitled List")</h2>
+    <a class="btn btn-outline-secondary" asp-page="/Lists/List">&larr; Back to My Lists</a>
+</div>
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        @TempData["SuccessMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        @TempData["ErrorMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+<!-- Publish Toggle -->
+<div class="card shadow-sm mb-4">
+    <div class="card-body d-flex justify-content-between align-items-center">
+        <div>
+            <h5 class="mb-1">Publish Status</h5>
+            @if (Model.ManagedList.is_published)
+            {
+                <span class="badge bg-success fs-6">Published</span>
+                <p class="text-muted mb-0 mt-1">Students can find and add this list.</p>
+            }
+            else
+            {
+                <span class="badge bg-secondary fs-6">Unpublished</span>
+                <p class="text-muted mb-0 mt-1">This list is only visible to you.</p>
+            }
+        </div>
+        <form method="post" asp-page-handler="TogglePublish">
+            <input type="hidden" name="listId" value="@Model.ManagedList.listID" />
+            @if (Model.ManagedList.is_published)
+            {
+                <button class="btn btn-warning">Unpublish</button>
+            }
+            else
+            {
+                <button class="btn btn-success">Publish</button>
+            }
+        </form>
+    </div>
+</div>
+
+<!-- Edit List Details -->
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <h5 class="card-title">Edit List Details</h5>
+        <form method="post" asp-page-handler="UpdateDetails">
+            <input type="hidden" name="listId" value="@Model.ManagedList.listID" />
+
+            <div class="mb-3">
+                <label asp-for="EditTitle" class="form-label">Title</label>
+                <input asp-for="EditTitle" class="form-control" />
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="EditDescription" class="form-label">Description</label>
+                <textarea asp-for="EditDescription" class="form-control" rows="3"></textarea>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="EditGradeLevel" class="form-label">Grade Level</label>
+                <input asp-for="EditGradeLevel" class="form-control" />
+            </div>
+
+            <button type="submit" class="btn btn-primary">Save Changes</button>
+        </form>
+    </div>
+</div>
+
+<!-- List Items with Teacher Note Editing -->
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <h5 class="card-title">Items (@Model.ListItems.Count)</h5>
+        <p class="text-muted small mb-3">
+            Set teacher notes, mark items as required/optional, and set recommended quantities for students.
+        </p>
+
+        @if (Model.ListItems.Count == 0)
+        {
+            <p class="text-muted">No items in this list yet. Add products from the catalog.</p>
+        }
+        else
+        {
+            @foreach (var entry in Model.ListItems)
+            {
+                var item = entry.Item;
+                var product = entry.Product;
+
+                <div class="border rounded p-3 mb-3">
+                    <div class="row align-items-start">
+                        <div class="col-md-2 text-center">
+                            @if (!string.IsNullOrEmpty(product.ImageURL))
+                            {
+                                <img src="@product.ImageURL" alt="@product.product_name"
+                                     class="img-fluid rounded" style="max-height: 80px; object-fit: contain;" />
+                            }
+                        </div>
+                        <div class="col-md-10">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <h6 class="mb-1">@product.product_name</h6>
+                                    <small class="text-muted">
+                                        $@item.price_at_purchase.ToString("0.00") &times; @item.quantity
+                                    </small>
+                                </div>
+                                <a href="/ProductPages/Listing/@product.product_ID"
+                                   class="btn btn-sm btn-outline-primary">
+                                    View
+                                </a>
+                            </div>
+
+                            <form method="post" asp-page-handler="UpdateItem" class="mt-2">
+                                <input type="hidden" name="listId" value="@Model.ManagedList.listID" />
+                                <input type="hidden" name="listItemId" value="@item.list_items_ID" />
+
+                                <div class="row g-2 align-items-end">
+                                    <div class="col-md-5">
+                                        <label class="form-label small mb-1">Teacher Note</label>
+                                        <input type="text" name="teacherNote" value="@item.teacher_note"
+                                               class="form-control form-control-sm"
+                                               placeholder="e.g. Get the wide-ruled version" maxlength="300" />
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label class="form-label small mb-1">Rec. Qty</label>
+                                        <input type="number" name="recommendedQuantity"
+                                               value="@item.recommended_quantity"
+                                               class="form-control form-control-sm"
+                                               min="1" placeholder="—" />
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="form-check mt-3">
+                                            <input type="checkbox" name="isRequired" value="true"
+                                                   class="form-check-input"
+                                                   id="req-@item.list_items_ID"
+                                                   @(item.is_required ? "checked" : "") />
+                                            <label class="form-check-label small" for="req-@item.list_items_ID">
+                                                Required Item
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <button type="submit" class="btn btn-sm btn-outline-primary w-100">
+                                            Save
+                                        </button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            }
+        }
+    </div>
+</div>
+
+<!-- List Stats -->
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <h5 class="card-title">Stats</h5>
+        <p class="mb-1"><strong>Total Price:</strong> $@Model.ManagedList.total_price.ToString("0.00")</p>
+        <p class="mb-0"><strong>Students who added this list:</strong> @Model.Students.Count</p>
+    </div>
+</div>
+
+<!-- Students Table -->
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <h5 class="card-title">Students</h5>
+
+        @if (Model.Students.Count == 0)
+        {
+            <p class="text-muted">No students have added this list yet.</p>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-striped align-middle">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Added On</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var student in Model.Students)
+                        {
+                            <tr>
+                                <td>@student.Name</td>
+                                <td>@student.Email</td>
+                                <td>@student.AddedAt.ToShortDateString()</td>
+                                <td>
+                                    @if (student.IsCompleted)
+                                    {
+                                        <span class="badge bg-success">Completed</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-warning text-dark">In Progress</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>

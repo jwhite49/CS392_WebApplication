@@ -50,6 +50,7 @@ builder.Services.AddRazorPages(options =>
     options.Conventions.AllowAnonymousToFolder("/ProductPages/Catalog");
     options.Conventions.AllowAnonymousToFolder("/ProductPages/Listing");
     options.Conventions.AllowAnonymousToPage("/Lists/List");
+    options.Conventions.AllowAnonymousToPage("/Lists/BrowsePublished");
     // Allowing anonymous access to public pages
 });
 

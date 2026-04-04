@@ -31,6 +31,13 @@ namespace CS392_WebApplication.Pages.ProductPages.Listing
 
         public Products Product { get; set; } = default!;
 
+        // User's lists for the picker
+        public List<Product_list> UserLists { get; set; } = new();
+        public HashSet<int> ImportedListIds { get; set; } = new();
+
+        // Track which list was just added to (for undo)
+        public int? LastAddedListId { get; set; }
+
         // GET
         public async Task<IActionResult> OnGetAsync(int id)
         {
@@ -40,11 +47,38 @@ namespace CS392_WebApplication.Pages.ProductPages.Listing
             if (Product == null)
                 return NotFound();
 
+            // Load user's lists for the picker
+            var identityUser = await _userManager.GetUserAsync(User);
+            if (identityUser != null)
+            {
+                var appUser = await _userContext.User
+                    .FirstOrDefaultAsync(u => u.Email == identityUser.Email);
+
+                if (appUser != null)
+                {
+                    UserLists = await _listContext.Product_list
+                        .Where(l => l.userID == appUser.UserID)
+                        .OrderByDescending(l => l.updated_at)
+                        .ToListAsync();
+
+                    var imported = await _listContext.PublishedList_Student
+                        .Where(ps => ps.student_userID == appUser.UserID)
+                        .Select(ps => ps.student_listID)
+                        .ToListAsync();
+
+                    ImportedListIds = new HashSet<int>(imported);
+                }
+            }
+
+            // Restore last added list ID from TempData for undo
+            if (TempData.Peek("UndoListId") is int undoListId)
+                LastAddedListId = undoListId;
+
             return Page();
         }
 
-        // ADD TO LIST
-        public async Task<IActionResult> OnPostAddToListAsync(int productId)
+        // ADD TO LIST (now accepts listId)
+        public async Task<IActionResult> OnPostAddToListAsync(int productId, int listId)
         {
             var identityUser = await _userManager.GetUserAsync(User);
             if (identityUser == null)
@@ -53,21 +87,24 @@ namespace CS392_WebApplication.Pages.ProductPages.Listing
             var appUser = await _userContext.User
                 .FirstOrDefaultAsync(u => u.Email == identityUser.Email);
 
+            // Verify list belongs to user
             var list = await _listContext.Product_list
-                .FirstOrDefaultAsync(l => l.userID == appUser.UserID);
+                .FirstOrDefaultAsync(l => l.listID == listId && l.userID == appUser!.UserID);
 
             if (list == null)
             {
-                list = new Product_list
-                {
-                    userID = appUser.UserID,
-                    total_price = 0,
-                    list_type = ListType.User,
-                    created_at = DateTime.UtcNow
-                };
+                TempData["ErrorMessage"] = "List not found.";
+                return RedirectToPage(new { id = productId });
+            }
 
-                _listContext.Product_list.Add(list);
-                await _listContext.SaveChangesAsync();
+            // Block adding to imported lists
+            var isImported = await _listContext.PublishedList_Student
+                .AnyAsync(ps => ps.student_listID == listId && ps.student_userID == appUser!.UserID);
+
+            if (isImported)
+            {
+                TempData["ErrorMessage"] = "Cannot add items to an imported list.";
+                return RedirectToPage(new { id = productId });
             }
 
             var product = await _productsContext.Products
@@ -78,7 +115,7 @@ namespace CS392_WebApplication.Pages.ProductPages.Listing
                 list_ID = list.listID,
                 product_ID = productId,
                 quantity = 1,
-                price_at_purchase = (float)product.retail_price,
+                price_at_purchase = (float)product!.retail_price,
                 purchase_type = Product_list_items.PurchaseType.Retail
             };
 
@@ -86,16 +123,18 @@ namespace CS392_WebApplication.Pages.ProductPages.Listing
             await _productsContext.SaveChangesAsync();
 
             list.total_price += product.retail_price;
+            list.updated_at = DateTime.UtcNow;
             await _listContext.SaveChangesAsync();
 
-            TempData["SuccessMessage"] = $"{product.product_name} added to your list!";
+            TempData["SuccessMessage"] = $"{product.product_name} added to \"{list.title}\"!";
             TempData["UndoProductId"] = productId;
+            TempData["UndoListId"] = listId;
 
             return RedirectToPage(new { id = productId });
         }
 
-        // UNDO ADD
-        public async Task<IActionResult> OnPostUndoAddAsync(int productId)
+        // UNDO ADD (now list-aware)
+        public async Task<IActionResult> OnPostUndoAddAsync(int productId, int listId)
         {
             var identityUser = await _userManager.GetUserAsync(User);
             if (identityUser == null)
@@ -105,19 +144,23 @@ namespace CS392_WebApplication.Pages.ProductPages.Listing
                 .FirstOrDefaultAsync(u => u.Email == identityUser.Email);
 
             var list = await _listContext.Product_list
-                .FirstOrDefaultAsync(l => l.userID == appUser.UserID);
+                .FirstOrDefaultAsync(l => l.listID == listId && l.userID == appUser!.UserID);
 
-            var item = await _productsContext.Product_list_items
-                .Where(i => i.list_ID == list.listID && i.product_ID == productId)
-                .OrderByDescending(i => i.list_items_ID)
-                .FirstOrDefaultAsync();
-
-            if (item != null)
+            if (list != null)
             {
-                list.total_price -= item.price_at_purchase;
-                _productsContext.Product_list_items.Remove(item);
-                await _productsContext.SaveChangesAsync();
-                await _listContext.SaveChangesAsync();
+                var item = await _productsContext.Product_list_items
+                    .Where(i => i.list_ID == list.listID && i.product_ID == productId)
+                    .OrderByDescending(i => i.list_items_ID)
+                    .FirstOrDefaultAsync();
+
+                if (item != null)
+                {
+                    list.total_price -= item.price_at_purchase;
+                    if (list.total_price < 0) list.total_price = 0;
+                    _productsContext.Product_list_items.Remove(item);
+                    await _productsContext.SaveChangesAsync();
+                    await _listContext.SaveChangesAsync();
+                }
             }
 
             TempData["SuccessMessage"] = "Item removed from your list.";

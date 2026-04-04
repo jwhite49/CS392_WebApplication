@@ -11,6 +11,6 @@ namespace CS392_WebApplication.Data
         }
 
         public DbSet<Product_list> Product_list { get; set; }
-
+        public DbSet<PublishedList_Student> PublishedList_Student { get; set; }
     }
 }
