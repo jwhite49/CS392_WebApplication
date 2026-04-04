@@ -41,7 +41,7 @@ namespace CS392_WebApplication.Pages.Lists
         {
             var identityUser = await _userManager.GetUserAsync(User);
             if (identityUser == null)
-                return RedirectToPage("/Account/Login");
+                return RedirectToPage("/Account/Login", new { area = "Identity" });
 
             var appUser = await _userContext.User
                 .FirstOrDefaultAsync(u => u.Email == identityUser.Email);
@@ -89,7 +89,7 @@ namespace CS392_WebApplication.Pages.Lists
         public async Task<IActionResult> OnPostAddToMyListsAsync(int publishedListId)
         {
             var identityUser = await _userManager.GetUserAsync(User);
-            if (identityUser == null) return RedirectToPage("/Account/Login");
+            if (identityUser == null) return RedirectToPage("/Account/Login", new { area = "Identity" });
 
             var appUser = await _userContext.User
                 .FirstOrDefaultAsync(u => u.Email == identityUser.Email);
@@ -148,27 +148,27 @@ namespace CS392_WebApplication.Pages.Lists
                     price_at_purchase = item.price_at_purchase,
                     purchase_type = item.purchase_type,
                     is_required = item.is_required,
-                    teacher_note = item.teacher_note,
-                    recommended_quantity = item.recommended_quantity
+                    recommended_quantity = item.recommended_quantity,
+                    teacher_note = item.teacher_note
                 };
                 _productsContext.Product_list_items.Add(copy);
             }
             await _productsContext.SaveChangesAsync();
 
-            // Create the link record
-            var linkRecord = new PublishedList_Student
+            // Create the published-student link
+            var link = new PublishedList_Student
             {
                 published_listID = publishedListId,
-                student_userID = appUser.UserID,
                 student_listID = studentList.listID,
+                student_userID = appUser.UserID,
                 added_at = DateTime.UtcNow,
                 is_completed = false
             };
 
-            _listContext.PublishedList_Student.Add(linkRecord);
+            _listContext.PublishedList_Student.Add(link);
             await _listContext.SaveChangesAsync();
 
-            TempData["SuccessMessage"] = $"\"{originalList.title}\" has been added to your lists!";
+            TempData["SuccessMessage"] = "List added to your lists!";
             return RedirectToPage();
         }
     }

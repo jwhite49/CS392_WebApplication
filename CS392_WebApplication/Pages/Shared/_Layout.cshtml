@@ -66,7 +66,9 @@
                             }
 
                             <li class="nav-item">
-                                <form asp-area="Identity" asp-page="/Account/Logout" method="post" class="form-inline">
+                                <form asp-area="Identity" asp-page="/Account/Logout"
+                                      asp-route-returnUrl="@Url.Page("/Index", new { area = "" })"
+                                      method="post" class="form-inline">
                                     <button type="submit" class="btn btn-outline-danger btn-logout">Logout</button>
                                 </form>
                             </li>

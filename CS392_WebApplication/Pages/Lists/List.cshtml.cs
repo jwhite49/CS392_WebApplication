@@ -35,7 +35,7 @@ namespace CS392_WebApplication.Pages.Lists
         {
             var identityUser = await _userManager.GetUserAsync(User);
             if (identityUser == null)
-                return RedirectToPage("/Account/Login");
+                return RedirectToPage("/Account/Login", new { area = "Identity" });
 
             var appUser = await _userContext.User
                 .FirstOrDefaultAsync(u => u.Email == identityUser.Email);
@@ -71,7 +71,7 @@ namespace CS392_WebApplication.Pages.Lists
         public async Task<IActionResult> OnPostDeleteListAsync(int listId)
         {
             var identityUser = await _userManager.GetUserAsync(User);
-            if (identityUser == null) return RedirectToPage("/Account/Login");
+            if (identityUser == null) return RedirectToPage("/Account/Login", new { area = "Identity" });
 
             var appUser = await _userContext.User
                 .FirstOrDefaultAsync(u => u.Email == identityUser.Email);
