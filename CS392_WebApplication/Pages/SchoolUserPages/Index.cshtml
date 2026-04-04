@@ -1,42 +1,71 @@
-﻿@page
+@page
 @model CS392_WebApplication.Pages.SchoolUserPages.IndexModel
 
 @{
-    ViewData["Title"] = "Index";
+    ViewData["Title"] = "Manage Teacher Requests";
 }
 
-<h1>Index</h1>
+<h1>Manage Teacher Requests</h1>
 
 <p>
     <a asp-page="Create">Create New</a>
 </p>
-<table class="table">
-    <thead>
-        <tr>
-            <th>
-                @Html.DisplayNameFor(model => model.School_User[0].school_name)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.School_User[0].is_approved)
-            </th>
-            <th></th>
-        </tr>
-    </thead>
-    <tbody>
-@foreach (var item in Model.School_User) {
-        <tr>
-            <td>
-                @Html.DisplayFor(modelItem => item.school_name)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.is_approved)
-            </td>
-            <td>
-                <a asp-page="./Edit" asp-route-id="@item.userID">Edit</a> |
-                <a asp-page="./Details" asp-route-id="@item.userID">Details</a> |
-                <a asp-page="./Delete" asp-route-id="@item.userID">Delete</a>
-            </td>
-        </tr>
+
+@if (!Model.SchoolRequests.Any())
+{
+    <p class="text-muted">No teacher account requests found.</p>
 }
-    </tbody>
-</table>
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>School Name</th>
+                <th>School Email</th>
+                <th>Grade</th>
+                <th>District</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model.SchoolRequests)
+            {
+                <tr>
+                    <td>@(item.User != null ? $"{item.User.FirstName} {item.User.LastName}" : "Unknown")</td>
+                    <td>@(item.User?.Email ?? "N/A")</td>
+                    <td>@item.SchoolUser.school_name</td>
+                    <td>@item.SchoolUser.school_email</td>
+                    <td>@item.SchoolUser.grade</td>
+                    <td>@item.SchoolUser.school_district</td>
+                    <td>
+                        @if (item.SchoolUser.is_approved)
+                        {
+                            <span class="badge bg-success">Approved</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-warning text-dark">Pending</span>
+                        }
+                    </td>
+                    <td>
+                        @if (!item.SchoolUser.is_approved)
+                        {
+                            <form method="post" asp-page-handler="Approve" asp-route-id="@item.SchoolUser.userID" style="display:inline">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="btn btn-sm btn-success">Approve</button>
+                            </form>
+                        }
+                        <form method="post" asp-page-handler="Deny" asp-route-id="@item.SchoolUser.userID" style="display:inline">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="btn btn-sm btn-danger">Deny</button>
+                        </form>
+                        <a asp-page="./Edit" asp-route-id="@item.SchoolUser.userID" class="btn btn-sm btn-secondary">Edit</a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}

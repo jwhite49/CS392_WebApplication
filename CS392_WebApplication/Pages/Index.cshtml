@@ -77,4 +77,32 @@
         </div>
 
     </div>
+
+    @if (User.Identity.IsAuthenticated && !User.IsInRole("Admin"))
+    {
+        <hr class="my-4" />
+        <h4 class="home-section-title">Teacher Account</h4>
+
+        @if (Model.IsAlreadySchool)
+        {
+            <div class="text-center">
+                <p class="text-success fw-bold">You have an approved teacher account.</p>
+            </div>
+        }
+        else if (Model.HasExistingRequest)
+        {
+            <div class="text-center">
+                <p class="text-warning fw-bold">Your teacher account request is pending admin approval.</p>
+            </div>
+        }
+        else
+        {
+            <div class="text-center">
+                <p>Are you a teacher? Sign up for a teacher account to create and share school supply lists with your students.</p>
+                <button class="home-action-btn" onclick="window.location.href='/TeacherRequest'">
+                    Request Teacher Account
+                </button>
+            </div>
+        }
+    }
 </div>
