@@ -33,6 +33,12 @@ namespace CS392_WebApplication.Pages.ProductPages.Catalog
 
         public IList<Products> Products { get; set; } = new List<Products>();
 
+        // User's lists for the "Add to List" picker
+        public List<Product_list> UserLists { get; set; } = new();
+
+        // Imported (read-only) list IDs so we can exclude them from the picker
+        public HashSet<int> ImportedListIds { get; set; } = new();
+
         // Sorting
         [BindProperty(SupportsGet = true)]
         public string? Sort { get; set; }
@@ -54,9 +60,9 @@ namespace CS392_WebApplication.Pages.ProductPages.Catalog
         public int TotalPages => (int)Math.Ceiling((double)TotalItems / PageSize);
 
         // ---------------------------------------------------------
-        // ADD TO LIST HANDLER
+        // ADD TO LIST HANDLER (now accepts listId)
         // ---------------------------------------------------------
-        public async Task<IActionResult> OnPostAddToListAsync(int productId)
+        public async Task<IActionResult> OnPostAddToListAsync(int productId, int listId)
         {
             var identityUser = await _userManager.GetUserAsync(User);
             if (identityUser == null)
@@ -68,23 +74,24 @@ namespace CS392_WebApplication.Pages.ProductPages.Catalog
             if (appUser == null)
                 return RedirectToPage("/Error");
 
-            int userId = appUser.UserID;
-
+            // Verify the list belongs to the user
             var list = await _listContext.Product_list
-                .FirstOrDefaultAsync(l => l.userID == userId);
+                .FirstOrDefaultAsync(l => l.listID == listId && l.userID == appUser.UserID);
 
             if (list == null)
             {
-                list = new Product_list
-                {
-                    userID = userId,
-                    total_price = 0,
-                    list_type = ListType.User,
-                    created_at = DateTime.UtcNow
-                };
+                TempData["ErrorMessage"] = "List not found.";
+                return RedirectToPage();
+            }
 
-                _listContext.Product_list.Add(list);
-                await _listContext.SaveChangesAsync();
+            // Block adding to imported (read-only) lists
+            var isImported = await _listContext.PublishedList_Student
+                .AnyAsync(ps => ps.student_listID == listId && ps.student_userID == appUser.UserID);
+
+            if (isImported)
+            {
+                TempData["ErrorMessage"] = "Cannot add items to an imported list.";
+                return RedirectToPage();
             }
 
             var product = await _productsContext.Products
@@ -106,9 +113,10 @@ namespace CS392_WebApplication.Pages.ProductPages.Catalog
             await _productsContext.SaveChangesAsync();
 
             list.total_price += product.retail_price;
+            list.updated_at = DateTime.UtcNow;
             await _listContext.SaveChangesAsync();
 
-            TempData["SuccessMessage"] = $"{product.product_name} added to your list!";
+            TempData["SuccessMessage"] = $"{product.product_name} added to \"{list.title}\"!";
             return RedirectToPage();
         }
 
@@ -117,6 +125,29 @@ namespace CS392_WebApplication.Pages.ProductPages.Catalog
         // ---------------------------------------------------------
         public async Task OnGetAsync()
         {
+            // Load user's lists for the picker
+            var identityUser = await _userManager.GetUserAsync(User);
+            if (identityUser != null)
+            {
+                var appUser = await _userContext.User
+                    .FirstOrDefaultAsync(u => u.Email == identityUser.Email);
+
+                if (appUser != null)
+                {
+                    UserLists = await _listContext.Product_list
+                        .Where(l => l.userID == appUser.UserID)
+                        .OrderByDescending(l => l.updated_at)
+                        .ToListAsync();
+
+                    var imported = await _listContext.PublishedList_Student
+                        .Where(ps => ps.student_userID == appUser.UserID)
+                        .Select(ps => ps.student_listID)
+                        .ToListAsync();
+
+                    ImportedListIds = new HashSet<int>(imported);
+                }
+            }
+
             var query = _productsContext.Products.AsQueryable();
 
             // CATEGORY FILTER
@@ -204,23 +235,11 @@ namespace CS392_WebApplication.Pages.ProductPages.Catalog
                     _productsContext.Products.AddRange(apiProducts);
                     await _productsContext.SaveChangesAsync();
 
-                    // Remove duplicate products
-                    var allProducts = await _productsContext.Products.ToListAsync();
-                    var duplicates = allProducts
-                        .GroupBy(p => p.product_name)
-                        .Where(g => g.Count() > 1)
-                        .SelectMany(g => g.OrderBy(p => p.product_ID).Skip(1))
-                        .ToList();
-
-                    if (duplicates.Any())
-                    {
-                        _productsContext.Products.RemoveRange(duplicates);
-                        await _productsContext.SaveChangesAsync();
-                    }
-
-                    // Reload Products list with newly saved API results
-                    Products = apiProducts;
                     TotalItems = apiProducts.Count;
+                    Products = apiProducts
+                        .Skip((PageNumber - 1) * PageSize)
+                        .Take(PageSize)
+                        .ToList();
                 }
             }
         }

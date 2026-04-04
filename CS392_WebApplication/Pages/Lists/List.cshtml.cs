@@ -26,16 +26,16 @@ namespace CS392_WebApplication.Pages.Lists
             _userManager = userManager;
         }
 
-        public Product_list? UserList { get; set; }
-        public bool HasList => UserList != null;
-
-        public List<(Product_list_items Item, Products Product)> ListItems { get; set; } = new();
+        public List<Product_list> UserLists { get; set; } = new();
+        public Dictionary<int, int> ListItemCounts { get; set; } = new();
+        public HashSet<int> ImportedListIds { get; set; } = new();
+        public bool IsAdminOrSchool { get; set; }
 
         public async Task<IActionResult> OnGetAsync()
         {
             var identityUser = await _userManager.GetUserAsync(User);
             if (identityUser == null)
-                return RedirectToPage("/Account/Login");
+                return RedirectToPage("/Account/Login", new { area = "Identity" });
 
             var appUser = await _userContext.User
                 .FirstOrDefaultAsync(u => u.Email == identityUser.Email);
@@ -43,56 +43,65 @@ namespace CS392_WebApplication.Pages.Lists
             if (appUser == null)
                 return RedirectToPage("/Error");
 
-            UserList = await _listContext.Product_list
-                .FirstOrDefaultAsync(l => l.userID == appUser.UserID);
+            IsAdminOrSchool = User.IsInRole("Admin") || User.IsInRole("School");
 
-            if (UserList == null)
-                return Page();
-
-            var items = await _productsContext.Product_list_items
-                .Where(i => i.list_ID == UserList.listID)
+            UserLists = await _listContext.Product_list
+                .Where(l => l.userID == appUser.UserID)
+                .OrderByDescending(l => l.updated_at)
                 .ToListAsync();
 
-            foreach (var item in items)
-            {
-                var product = await _productsContext.Products
-                    .FirstOrDefaultAsync(p => p.product_ID == item.product_ID);
+            // Determine which lists are imported from published lists
+            var imported = await _listContext.PublishedList_Student
+                .Where(ps => ps.student_userID == appUser.UserID)
+                .Select(ps => ps.student_listID)
+                .ToListAsync();
 
-                if (product != null)
-                    ListItems.Add((item, product));
+            ImportedListIds = new HashSet<int>(imported);
+
+            foreach (var list in UserLists)
+            {
+                var count = await _productsContext.Product_list_items
+                    .CountAsync(i => i.list_ID == list.listID);
+                ListItemCounts[list.listID] = count;
             }
 
             return Page();
         }
 
-        // DELETE ITEM
-        public async Task<IActionResult> OnPostDeleteItemAsync(int listItemId)
+        public async Task<IActionResult> OnPostDeleteListAsync(int listId)
         {
-            var item = await _productsContext.Product_list_items
-                .FirstOrDefaultAsync(i => i.list_items_ID == listItemId);
+            var identityUser = await _userManager.GetUserAsync(User);
+            if (identityUser == null) return RedirectToPage("/Account/Login", new { area = "Identity" });
 
-            if (item == null)
+            var appUser = await _userContext.User
+                .FirstOrDefaultAsync(u => u.Email == identityUser.Email);
+            if (appUser == null) return RedirectToPage("/Error");
+
+            var list = await _listContext.Product_list
+                .FirstOrDefaultAsync(l => l.listID == listId && l.userID == appUser.UserID);
+
+            if (list == null)
             {
-                TempData["ErrorMessage"] = "Item not found.";
+                TempData["ErrorMessage"] = "List not found.";
                 return RedirectToPage();
             }
 
-            var list = await _listContext.Product_list
-                .FirstOrDefaultAsync(l => l.listID == item.list_ID);
-
-            if (list != null)
-            {
-                list.total_price -= item.price_at_purchase * item.quantity;
-                if (list.total_price < 0)
-                    list.total_price = 0;
-
-                await _listContext.SaveChangesAsync();
-            }
-
-            _productsContext.Product_list_items.Remove(item);
+            // Remove all items in this list
+            var items = await _productsContext.Product_list_items
+                .Where(i => i.list_ID == listId).ToListAsync();
+            _productsContext.Product_list_items.RemoveRange(items);
             await _productsContext.SaveChangesAsync();
 
-            TempData["SuccessMessage"] = "Item removed from your list.";
+            // Remove published-student records referencing this list
+            var studentRecords = await _listContext.PublishedList_Student
+                .Where(ps => ps.published_listID == listId || ps.student_listID == listId)
+                .ToListAsync();
+            _listContext.PublishedList_Student.RemoveRange(studentRecords);
+
+            _listContext.Product_list.Remove(list);
+            await _listContext.SaveChangesAsync();
+
+            TempData["SuccessMessage"] = "List deleted successfully.";
             return RedirectToPage();
         }
     }

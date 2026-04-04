@@ -2,6 +2,10 @@
 @model ProductListingModel
 @{
     ViewData["Title"] = Model.Product.product_name;
+
+    var addableLists = Model.UserLists
+        .Where(l => !Model.ImportedListIds.Contains(l.listID))
+        .ToList();
 }
 
 <div class="container mt-4">
@@ -15,22 +19,34 @@
 
             <div class="d-flex gap-2">
 
-                <!-- View My List -->
+                <!-- View My Lists -->
                 <a href="/Lists/List" class="btn btn-sm btn-primary">
-                    View My List
+                    View My Lists
                 </a>
 
                 <!-- Undo Button -->
-                <form method="post" asp-page-handler="UndoAdd" class="d-inline">
-                    <input type="hidden" name="productId" value="@Model.Product.product_ID" />
-                    <button type="submit" class="btn btn-sm btn-warning">
-                        Undo
-                    </button>
-                </form>
+                @if (TempData["UndoProductId"] is int undoPid && TempData["UndoListId"] is int undoLid)
+                {
+                    <form method="post" asp-page-handler="UndoAdd" class="d-inline">
+                        <input type="hidden" name="productId" value="@undoPid" />
+                        <input type="hidden" name="listId" value="@undoLid" />
+                        <button type="submit" class="btn btn-sm btn-warning">
+                            Undo
+                        </button>
+                    </form>
+                }
 
                 <!-- Close Alert -->
                 <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
             </div>
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
     }
 
@@ -121,13 +137,55 @@
                 }
             </div>
 
-            <!-- Add to List Button -->
-            <form method="post" asp-page-handler="AddToList" class="mt-4">
-                <input type="hidden" name="productId" value="@Model.Product.product_ID" />
-                <button type="submit" class="btn btn-success">
-                    + Add to My List
-                </button>
-            </form>
+            <!-- Add to List Picker -->
+            <div class="mt-4">
+                @if (User.Identity?.IsAuthenticated == true)
+                {
+                    @if (addableLists.Any())
+                    {
+                        <div class="dropdown">
+                            <button class="btn btn-success dropdown-toggle"
+                                    type="button"
+                                    data-bs-toggle="dropdown"
+                                    aria-expanded="false">
+                                + Add to My List
+                            </button>
+                            <ul class="dropdown-menu">
+                                @foreach (var list in addableLists)
+                                {
+                                    <li>
+                                        <form method="post" asp-page-handler="AddToList">
+                                            <input type="hidden" name="productId" value="@Model.Product.product_ID" />
+                                            <input type="hidden" name="listId" value="@list.listID" />
+                                            <button type="submit" class="dropdown-item">
+                                                @(list.title ?? "Untitled List")
+                                            </button>
+                                        </form>
+                                    </li>
+                                }
+                                <li><hr class="dropdown-divider" /></li>
+                                <li>
+                                    <a class="dropdown-item text-primary" href="/Lists/CreateList">
+                                        + Create New List
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                    }
+                    else
+                    {
+                        <a href="/Lists/CreateList" class="btn btn-success">
+                            Create a List First
+                        </a>
+                    }
+                }
+                else
+                {
+                    <a href="/Identity/Account/Login" class="btn btn-success">
+                        Log in to Add to List
+                    </a>
+                }
+            </div>
 
         </div>
     </div>
