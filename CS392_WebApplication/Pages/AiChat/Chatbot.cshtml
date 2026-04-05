@@ -1,12 +1,12 @@
 ﻿@page
 @model CS392_WebApplication.Pages.AiChat.ChatbotModel
 @{
-    ViewData["Title"] = "Product Assistant";
+    ViewData["Title"] = "Supply Assistant";
 }
 
 <div class="container mt-4">
-    <h1 class="mb-4">Product Assistant</h1>
-    <p class="text-muted mb-4">Ask questions about products in our catalog. Select a product to get specific information, or ask general questions about school supplies.</p>
+    <h1 class="mb-4">Supply Category Assistant</h1>
+    <p class="text-muted mb-4">Select a supply category and ask the assistant for help finding the right items.</p>
 
     <div class="row">
         <div class="col-md-8">
@@ -14,16 +14,33 @@
                 <div class="card-body">
                     <form method="post">
                         <div class="mb-3">
-                            <label for="SelectedItemId" class="form-label">Select a Product (Optional)</label>
-                            <select asp-for="SelectedItemId" class="form-select" asp-items="@(new Microsoft.AspNetCore.Mvc.Rendering.SelectList(Model.Product, "product_ID", "product_name"))">
-                                <option value="">-- Ask about any product --</option>
+                            <label for="SelectedCategory" class="form-label">Select a Category (Optional)</label>
+                            <select asp-for="SelectedCategory" class="form-select">
+                                <option value="">-- Browse all categories --</option>
+                                @foreach (var category in Model.Catalog.Keys)
+                                {
+                                    <option value="@category">@category</option>
+                                }
                             </select>
-                            <small class="text-muted">Choose a specific product or leave blank for general questions</small>
+                            <small class="text-muted">Choose a category to focus your question, or leave blank for general help</small>
                         </div>
+
+                        @if (!string.IsNullOrEmpty(Model.SelectedCategory) && Model.Catalog.TryGetValue(Model.SelectedCategory, out var items))
+                        {
+                            <div class="mb-3">
+                                <label class="form-label text-muted">Items in this category:</label>
+                                <div class="d-flex flex-wrap gap-2">
+                                    @foreach (var item in items)
+                                    {
+                                        <span class="badge bg-secondary">@item</span>
+                                    }
+                                </div>
+                            </div>
+                        }
 
                         <div class="mb-3">
                             <label for="UserQuestion" class="form-label">Your Question</label>
-                            <textarea asp-for="UserQuestion" class="form-control" rows="4" placeholder="e.g., What are the best features of this product? Is this good for college students? Compare prices..."></textarea>
+                            <textarea asp-for="UserQuestion" class="form-control" rows="4" placeholder="e.g., What writing supplies do I need for college? What's the difference between markers and highlighters?"></textarea>
                         </div>
 
                         <div class="d-grid">
@@ -57,14 +74,31 @@
                 </div>
                 <div class="card-body">
                     <ul class="list-unstyled mb-0">
-                        <li class="mb-2">"What makes this product a good choice?"</li>
-                        <li class="mb-2">"Is this suitable for elementary school?"</li>
-                        <li class="mb-2">"What are similar alternatives?"</li>
-                        <li class="mb-2">"Is this product good value for money?"</li>
-                        <li class="mb-2">"What should I know before buying?"</li>
+                        <li class="mb-2">"What writing supplies do I need for high school?"</li>
+                        <li class="mb-2">"What's in the art supplies category?"</li>
+                        <li class="mb-2">"What organization tools are best for a binder?"</li>
+                        <li class="mb-2">"What math tools do I need for geometry?"</li>
+                        <li class="mb-2">"What digital supplies should a student have?"</li>
                     </ul>
                 </div>
             </div>
+
+            @if (Model.Catalog.Count > 0)
+            {
+                <div class="card shadow-sm mt-3">
+                    <div class="card-header bg-secondary text-white">
+                        <strong>All Categories</strong>
+                    </div>
+                    <div class="card-body p-2">
+                        <ul class="list-unstyled mb-0">
+                            @foreach (var cat in Model.Catalog.Keys)
+                            {
+                                <li><small class="text-muted">@cat (@Model.Catalog[cat].Count items)</small></li>
+                            }
+                        </ul>
+                    </div>
+                </div>
+            }
         </div>
     </div>
 </div>
