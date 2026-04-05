@@ -1,9 +1,11 @@
 using CS392_WebApplication.Data;
 using CS392_WebApplication.Models;
+using CS392_WebApplication.API;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
+using Newtonsoft.Json.Linq;
 
 namespace CS392_WebApplication.Pages.ProductPages.Listing
 {
@@ -14,22 +16,28 @@ namespace CS392_WebApplication.Pages.ProductPages.Listing
         private readonly UserDbContext _userContext;
         private readonly UserManager<IdentityUser> _userManager;
         private readonly ILogger<ProductListingModel> _logger;
+        private readonly apiConfig _serpApiService;
 
         public ProductListingModel(
             ILogger<ProductListingModel> logger,
             ProductsDbContext productsContext,
             Product_listDbContext listContext,
             UserDbContext userContext,
-            UserManager<IdentityUser> userManager)
+            UserManager<IdentityUser> userManager,
+            apiConfig serpApiService)
         {
             _logger = logger;
             _productsContext = productsContext;
             _listContext = listContext;
             _userContext = userContext;
             _userManager = userManager;
+            _serpApiService = serpApiService;
         }
 
         public Products Product { get; set; } = default!;
+
+        // Price comparisons from SerpAPI
+        public List<(string Source, string? Logo, double Price, string Url)> PriceComparisons { get; set; } = new();
 
         // User's lists for the picker
         public List<Product_list> UserLists { get; set; } = new();
@@ -73,6 +81,33 @@ namespace CS392_WebApplication.Pages.ProductPages.Listing
             // Restore last added list ID from TempData for undo
             if (TempData.Peek("UndoListId") is int undoListId)
                 LastAddedListId = undoListId;
+
+            // PRICE COMPARISONS: search SerpAPI for other retailers selling this product
+            try
+            {
+                var results = _serpApiService.SearchProducts(Product.product_name);
+                foreach (JObject result in results ?? new JArray())
+                {
+                    if (PriceComparisons.Count >= 6) break;
+
+                    var url = result["serpapi_link"]?.ToString()?.Trim() is { Length: > 0 } u ? u
+                              : result["link"]?.ToString();
+                    var source = result["source"]?.ToString();
+
+                    if (string.IsNullOrEmpty(url) || string.IsNullOrEmpty(source)) continue;
+
+                    // Skip if it's the same source already shown
+                    if (source.Equals(Product.source_name, StringComparison.OrdinalIgnoreCase)) continue;
+
+                    double.TryParse(result["extracted_price"]?.ToString(), out double price);
+                    var logo = result["source_icon"]?.ToString();
+                    PriceComparisons.Add((source, logo, price, url));
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "SerpAPI price comparison failed for product {Id}", id);
+            }
 
             return Page();
         }

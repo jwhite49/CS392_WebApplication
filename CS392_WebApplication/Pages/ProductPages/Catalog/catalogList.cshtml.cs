@@ -17,7 +17,7 @@ namespace CS392_WebApplication.Pages.ProductPages.Catalog
         public static readonly HashSet<string> AllowedSearches = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
         {
 
-                "WRITING", "pens","pencils","markers","highlighters","chalk","crayons","ink tools","calligraphy tools",
+                "WRITING", "pens","pencils","markers","highlighters","chalk","crayons","ink tools","calligraphy tools","stationery","pen pencil marker",
 
                 "PAPER", "paper","notebooks","notepads","cards","sticky notes","printer paper","construction paper","sketch paper","graph paper",
 
@@ -48,6 +48,18 @@ namespace CS392_WebApplication.Pages.ProductPages.Catalog
                 "BOARD SUPPLIES", "whiteboards","chalkboards","dry erase tools","board erasers",
 
                 "CLASSROOM MANAGEMENT", "name tags","hall passes","assignment trays","classroom timers","reward charts",
+
+                // MongoDB categories
+                "Technology", "laptop","tablet","calculator","graphing calculator","flash drive",
+                "external storage","mouse","headphones","charger","printer","device cases","stylus tools",
+
+                "Basic Essentials", "water bottle","lunch box","backpack keychain","umbrella",
+                "stickers","book cover","locker mirror",
+
+                "stationery", "writing tools", "paper products", "notebooks", "binders", "folders", 
+                "desk supplies", "art supplies", "coloring supplies", "geometry tools", "calculators", 
+                "backpacks", "lunch supplies", "organization supplies", "adhesives", "cutting tools", 
+                "classroom supplies", "study aids", "electronics", "labels"
         };
     
     }

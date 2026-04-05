@@ -197,28 +197,31 @@ namespace CS392_WebApplication.Pages.ProductPages.Catalog
                 .ToListAsync();
 
             //API INGESTION - Only call API if no products found in DB, search field not empty, and if search matches a term on whitelist
-            if (!string.IsNullOrEmpty(Search) && !Products.Any() && catalogListModel.AllowedSearches.Contains(Search))
+            bool isAllowedSearch = !string.IsNullOrEmpty(Search) && catalogListModel.AllowedSearches.Any(a =>
+                a.Contains(Search, StringComparison.OrdinalIgnoreCase) ||
+                Search.Contains(a, StringComparison.OrdinalIgnoreCase));
+
+            if (!string.IsNullOrEmpty(Search) && !Products.Any() && isAllowedSearch)
             {
                 var apiProducts = new List<Products>();
                 var results = _serpApiService.SearchProducts(Search);
-
                 int resultLimit = 0;
 
                 foreach (JObject result in results ?? new JArray())
                 {
-                    if (resultLimit >= 20)
-                        break;
+                    if (resultLimit >= 30) break;
 
                     var product = new Products
                     {
-                        product_name = result["title"]?.ToString()?[..Math.Min(result["title"]?.ToString()?.Length ?? 0, 50)] ?? "",
-                        description = result["description"]?.ToString() ?? "",
-                        retail_URL = result["serpapi_link"]?.ToString() ?? "",
-                        ImageURL = result["thumbnail"]?.ToString() ?? "",
-                        source_name = result["source"]?.ToString(),
-                        source_logo = result["source_icon"]?.ToString(),
+                        product_name = result["title"]?.ToString()?[..Math.Min(result["title"]?.ToString()?.Length ?? 0, 50)] ?? "Unknown Product",
+                        description = result["description"]?.ToString()?.Trim() is { Length: > 0 } d ? d : "No description available.",
+                        retail_URL = result["serpapi_link"]?.ToString()?.Trim() is { Length: > 0 } u ? u : result["link"]?.ToString() ?? "#",
+                        ImageURL = result["thumbnail"]?.ToString(),
+                        source_name = result["source"]?.ToString() is { Length: > 0 } sn ? sn[..Math.Min(sn.Length, 40)] : null,
+                        source_logo = result["source_icon"]?.ToString() is { Length: > 0 } sl ? sl[..Math.Min(sl.Length, 255)] : null,
                         rating = result["rating"]?.ToObject<double?>(),
                         reviews = result["reviews"]?.ToObject<int?>(),
+                        bulk_availability = false,
                     };
 
                     if (double.TryParse(result["extracted_price"]?.ToString(), out double retailPrice))

@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -8,6 +9,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace CS392_WebApplication.Pages.Lists
 {
+    [Authorize]
     public class CreateListModel : PageModel
     {
         private readonly Product_listDbContext _listContext;

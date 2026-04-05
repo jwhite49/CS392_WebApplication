@@ -137,6 +137,37 @@
                 }
             </div>
 
+            <!-- Compare Prices -->
+            <div class="mt-4 p-3 border rounded bg-light">
+                <h5 class="mb-3">Compare Prices</h5>
+                @if (Model.PriceComparisons.Any())
+                {
+                    <div class="d-flex flex-wrap gap-3">
+                        @foreach (var offer in Model.PriceComparisons)
+                        {
+                            <a href="@offer.Url"
+                               target="_blank"
+                               rel="noopener"
+                               class="btn btn-outline-secondary d-flex align-items-center gap-2">
+                                @if (!string.IsNullOrEmpty(offer.Logo))
+                                {
+                                    <img src="@offer.Logo" alt="@offer.Source" style="height: 18px;" />
+                                }
+                                <span>@offer.Source</span>
+                                @if (offer.Price > 0)
+                                {
+                                    <span class="fw-bold text-success">$@offer.Price.ToString("0.00")</span>
+                                }
+                            </a>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <p class="text-muted">No price comparisons found for this product.</p>
+                }
+            </div>
+
             <!-- Add to List Picker -->
             <div class="mt-4">
                 @if (User.Identity?.IsAuthenticated == true)
