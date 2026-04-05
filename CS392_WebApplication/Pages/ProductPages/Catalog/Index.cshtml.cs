@@ -196,8 +196,8 @@ namespace CS392_WebApplication.Pages.ProductPages.Catalog
                 .Take(PageSize)
                 .ToListAsync();
 
-            //API INGESTION - Only call API if no products found in database for this search
-            if (!string.IsNullOrEmpty(Search) && !Products.Any())
+            //API INGESTION - Only call API if no products found in DB, search field not empty, and if search matches a term on whitelist
+            if (!string.IsNullOrEmpty(Search) && !Products.Any() && catalogListModel.AllowedSearches.Contains(Search))
             {
                 var apiProducts = new List<Products>();
                 var results = _serpApiService.SearchProducts(Search);
