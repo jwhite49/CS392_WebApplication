@@ -1,0 +1,49 @@
+@page
+@model CS392_WebApplication.Pages.Admin.SeedProductsModel
+@{
+    ViewData["Title"] = "Seed Products";
+}
+
+<div class="container mt-4">
+    <h2>Product Database Seeder</h2>
+    <p class="text-muted">Runs SerpAPI searches for all school supply categories and saves up to 30 results per term into the database.</p>
+    <p class="text-muted">This process takes a significant amount of time and WILL use a substantial portion of your API quota.</p>
+
+
+    @if (Model.Results.Any())
+    {
+        <div class="alert alert-info mt-3">
+            <strong>Seeding complete.</strong> @Model.TotalAdded new products added, @Model.TotalSkipped duplicates skipped.
+        </div>
+
+        <table class="table table-sm table-bordered mt-3">
+            <thead class="table-dark">
+                <tr>
+                    <th>Search Term</th>
+                    <th>Added</th>
+                    <th>Skipped</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var r in Model.Results)
+                {
+                    <tr class="@(r.Error != null ? "table-danger" : r.Added == 0 ? "table-warning" : "")">
+                        <td>@r.Term</td>
+                        <td>@r.Added</td>
+                        <td>@r.Skipped</td>
+                        <td>@(r.Error ?? "OK")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+
+    <form method="post" class="mt-3">
+        <button type="submit" class="btn btn-danger btn-lg"
+                onclick="return confirm('This will run @Model.SeedTerms.Count SerpAPI searches and may use significant API quota. Continue?')">
+            Run Seeder (@Model.SeedTerms.Count searches)
+        </button>
+        <a href="/Admin/AdminDashboard" class="btn btn-secondary ms-2">Back</a>
+    </form>
+</div>

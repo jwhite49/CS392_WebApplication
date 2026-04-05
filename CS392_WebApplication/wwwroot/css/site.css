@@ -170,6 +170,7 @@ table, th, td {
     .category-btn img {
         height: 150px;
         margin-bottom: 6px;
+        border-radius: 5%;
     }
 
     .category-btn p {
