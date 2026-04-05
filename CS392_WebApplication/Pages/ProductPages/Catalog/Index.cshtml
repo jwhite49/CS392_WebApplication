@@ -241,35 +241,72 @@ else
         }
     </div>
 
-    @if (Model.TotalPages > 1)
-    {
-        <nav aria-label="Product catalog pages">
-            <ul class="pagination justify-content-center mt-4">
-                <li class="page-item @(Model.PageNumber <= 1 ? "disabled" : "")">
-                    <a class="page-link"
-                       href="?Search=@Model.Search&Sort=@Model.Sort&pageNumber=@(Model.PageNumber - 1)">
-                        Previous
-                    </a>
-                </li>
-
-                @for (int i = 1; i <= Model.TotalPages; i++)
-                {
-                    <li class="page-item @(i == Model.PageNumber ? "active" : "")">
-                        <a class="page-link"
-                           href="?Search=@Model.Search&Sort=@Model.Sort&pageNumber=@i">
-                            @i
-                        </a>
-                    </li>
-                }
-
-                <li class="page-item @(Model.PageNumber >= Model.TotalPages ? "disabled" : "")">
-                    <a class="page-link"
-                       href="?Search=@Model.Search&Sort=@Model.Sort&pageNumber=@(Model.PageNumber + 1)">
-                        Next
-                    </a>
-                </li>
-            </ul>
-        </nav>
-    }
 }
 
+@if (Model.TotalPages > 1)
+{
+    int windowSize = 10;
+    int pageWindowStart = (Model.PageNumber - 1) / windowSize * windowSize + 1;
+    int windowEnd = Math.Min(pageWindowStart + windowSize - 1, Model.TotalPages);
+    bool hasPrevWindow = pageWindowStart > 1;
+    bool hasNextWindow = windowEnd < Model.TotalPages;
+    int prevWindowStart = pageWindowStart - windowSize;
+    int nextWindowStart = pageWindowStart + windowSize;
+
+    <nav aria-label="Product catalog pages">
+        <ul class="pagination justify-content-center mt-4 flex-wrap">
+
+        <!-- Previous Page -->
+        <li class="page-item @(Model.PageNumber <= 1 ? "disabled" : "")">
+            <a class="page-link"
+               href="?Search=@Model.Search&Sort=@Model.Sort&pageNumber=@(Model.PageNumber - 1)">
+                &laquo;
+            </a>
+        </li>
+
+        <!-- Previous Window (…) -->
+        @if (hasPrevWindow)
+        {
+            <li class="page-item">
+                <a class="page-link text-secondary"
+                   href="?Search=@Model.Search&Sort=@Model.Sort&pageNumber=@prevWindowStart"
+                   title="Pages @prevWindowStart–@(pageWindowStart - 1)">
+                    &hellip;
+                </a>
+            </li>
+        }
+
+        <!-- Page Numbers (current window only) -->
+        @for (int i = pageWindowStart; i <= windowEnd; i++)
+        {
+            <li class="page-item @(i == Model.PageNumber ? "active" : "")">
+                <a class="page-link"
+                   href="?Search=@Model.Search&Sort=@Model.Sort&pageNumber=@i">
+                    @i
+                </a>
+            </li>
+        }
+
+        <!-- Next Window (…) -->
+        @if (hasNextWindow)
+        {
+            <li class="page-item">
+                <a class="page-link text-secondary"
+                   href="?Search=@Model.Search&Sort=@Model.Sort&pageNumber=@nextWindowStart"
+                   title="Pages @nextWindowStart–@(Math.Min(nextWindowStart + windowSize - 1, Model.TotalPages))">
+                    &hellip;
+                </a>
+            </li>
+        }
+
+        <!-- Next Page -->
+        <li class="page-item @(Model.PageNumber >= Model.TotalPages ? "disabled" : "")">
+            <a class="page-link"
+               href="?Search=@Model.Search&Sort=@Model.Sort&pageNumber=@(Model.PageNumber + 1)">
+                &raquo;
+            </a>
+        </li>
+
+    </ul>
+    </nav>
+}

@@ -55,6 +55,9 @@ namespace CS392_WebApplication.Pages.ProductPages.Catalog
         [BindProperty(SupportsGet = true)]
         public int PageNumber { get; set; } = 1;
 
+        [BindProperty(SupportsGet = true)]
+        public int PageWindowStart { get; set; } = 1;
+
         public int PageSize { get; } = 12;
         public int TotalItems { get; set; }
         public int TotalPages => (int)Math.Ceiling((double)TotalItems / PageSize);
