@@ -217,7 +217,10 @@ namespace CS392_WebApplication.Pages.ProductPages.Catalog
                     var product = new Products
                     {
                         product_name = result["title"]?.ToString()?[..Math.Min(result["title"]?.ToString()?.Length ?? 0, 50)] ?? "Unknown Product",
-                        description = result["description"]?.ToString()?.Trim() is { Length: > 0 } d ? d : "No description available.",
+                        description = result["snippet"]?.ToString()?.Trim() is { Length: > 0 } d1 ? d1
+                            : (result["extensions"] as JArray) is JArray ext && ext.Count > 0
+                                ? string.Join(" | ", ext.Select(e => e.ToString()))
+                                : "No description available.",
                         retail_URL = result["serpapi_link"]?.ToString()?.Trim() is { Length: > 0 } u ? u : result["link"]?.ToString() ?? "#",
                         ImageURL = result["thumbnail"]?.ToString(),
                         source_name = result["source"]?.ToString() is { Length: > 0 } sn ? sn[..Math.Min(sn.Length, 40)] : null,

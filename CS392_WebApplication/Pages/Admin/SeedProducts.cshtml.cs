@@ -111,7 +111,10 @@ namespace CS392_WebApplication.Pages.Admin
                         var product = new Products
                         {
                             product_name = name,
-                            description = item["description"]?.ToString()?.Trim() is { Length: > 0 } d ? d : "No description available.",
+                            description = item["snippet"]?.ToString()?.Trim() is { Length: > 0 } d1 ? d1
+                                : (item["extensions"] as JArray) is JArray ext && ext.Count > 0
+                                    ? string.Join(" | ", ext.Select(e => e.ToString()))
+                                    : "No description available.",
                             retail_URL = item["serpapi_link"]?.ToString()?.Trim() is { Length: > 0 } u ? u : item["link"]?.ToString() ?? "#",
                             ImageURL = item["thumbnail"]?.ToString(),
                             source_name = item["source"]?.ToString() is { Length: > 0 } sn ? sn[..Math.Min(sn.Length, 40)] : null,
