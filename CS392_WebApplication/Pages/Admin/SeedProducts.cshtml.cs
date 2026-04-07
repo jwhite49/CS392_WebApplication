@@ -35,6 +35,17 @@ namespace CS392_WebApplication.Pages.Admin
         public int TotalAdded => Results.Sum(r => r.Added);
         public int TotalSkipped => Results.Sum(r => r.Skipped);
 
+        public class UpdateResult
+        {
+            public string Term { get; set; } = "";
+            public int Updated { get; set; }
+            public int Skipped { get; set; }
+            public string? Error { get; set; }
+        }
+
+        public List<UpdateResult> UpdateResults { get; set; } = new();
+        public int TotalUpdated => UpdateResults.Sum(r => r.Updated);
+
         // Curated list of specific school supply terms to seed
         public List<string> SeedTerms { get; } = new()
         {
@@ -145,6 +156,69 @@ namespace CS392_WebApplication.Pages.Admin
                 Results.Add(result);
             }
 
+            return Page();
+        }
+
+        public async Task<IActionResult> OnPostUpdateDescriptionsAsync()
+        {
+            // Load all products with a stale description into a lookup by lowercase name
+            var staleProducts = await _productsContext.Products
+                .Where(p => p.description == "No description available.")
+                .ToListAsync();
+
+            var lookup = staleProducts
+                .GroupBy(p => p.product_name.ToLower())
+                .ToDictionary(g => g.Key, g => g.ToList());
+
+            foreach (var term in SeedTerms)
+            {
+                var result = new UpdateResult { Term = term };
+
+                try
+                {
+                    var apiResults = _serpApiService.SearchProducts(term);
+
+                    foreach (JObject item in apiResults ?? new JArray())
+                    {
+                        var title = item["title"]?.ToString()?[..Math.Min(item["title"]?.ToString()?.Length ?? 0, 50)];
+                        if (string.IsNullOrWhiteSpace(title)) continue;
+
+                        if (!lookup.TryGetValue(title.ToLower(), out var matches))
+                        {
+                            result.Skipped++;
+                            continue;
+                        }
+
+                        var newDesc = item["snippet"]?.ToString()?.Trim() is { Length: > 0 } d1 ? d1
+                            : (item["extensions"] as JArray) is JArray ext && ext.Count > 0
+                                ? string.Join(" | ", ext.Select(e => e.ToString()))
+                                : null;
+
+                        if (newDesc == null)
+                        {
+                            result.Skipped++;
+                            continue;
+                        }
+
+                        foreach (var product in matches)
+                        {
+                            product.description = newDesc;
+                            result.Updated++;
+                        }
+
+                        lookup.Remove(title.ToLower()); // don't re-process same product twice
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "UpdateDescriptions failed for term: {Term}", term);
+                    result.Error = ex.Message[..Math.Min(ex.Message.Length, 80)];
+                }
+
+                UpdateResults.Add(result);
+            }
+
+            await _productsContext.SaveChangesAsync();
             return Page();
         }
     }

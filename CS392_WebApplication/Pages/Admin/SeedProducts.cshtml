@@ -46,4 +46,44 @@
         </button>
         <a href="/Admin/AdminDashboard" class="btn btn-secondary ms-2">Back</a>
     </form>
+
+    <hr class="mt-5" />
+    <h4>Update Stale Descriptions</h4>
+    <p class="text-muted">Re-runs all @Model.SeedTerms.Count search terms and updates any product whose description is currently "No description available." Uses the same API quota as a full seed.</p>
+
+    @if (Model.UpdateResults.Any())
+    {
+        <div class="alert alert-success mt-3">
+            <strong>Update complete.</strong> @Model.TotalUpdated product descriptions updated.
+        </div>
+
+        <table class="table table-sm table-bordered mt-3">
+            <thead class="table-dark">
+                <tr>
+                    <th>Search Term</th>
+                    <th>Updated</th>
+                    <th>Skipped</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var r in Model.UpdateResults)
+                {
+                    <tr class="@(r.Error != null ? "table-danger" : r.Updated == 0 ? "table-warning" : "")">
+                        <td>@r.Term</td>
+                        <td>@r.Updated</td>
+                        <td>@r.Skipped</td>
+                        <td>@(r.Error ?? "OK")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+
+    <form method="post" asp-page-handler="UpdateDescriptions" class="mt-3">
+        <button type="submit" class="btn btn-warning btn-lg"
+                onclick="return confirm('This will run @Model.SeedTerms.Count SerpAPI searches to update stale descriptions. Continue?')">
+            Update Stale Descriptions (@Model.SeedTerms.Count searches)
+        </button>
+    </form>
 </div>
