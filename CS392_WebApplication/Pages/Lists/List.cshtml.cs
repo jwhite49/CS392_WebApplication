@@ -92,11 +92,12 @@ namespace CS392_WebApplication.Pages.Lists
             _productsContext.Product_list_items.RemoveRange(items);
             await _productsContext.SaveChangesAsync();
 
-            // Remove published-student records referencing this list
+            // Remove published-student records referencing this list first (FK constraint)
             var studentRecords = await _listContext.PublishedList_Student
                 .Where(ps => ps.published_listID == listId || ps.student_listID == listId)
                 .ToListAsync();
             _listContext.PublishedList_Student.RemoveRange(studentRecords);
+            await _listContext.SaveChangesAsync();
 
             _listContext.Product_list.Remove(list);
             await _listContext.SaveChangesAsync();

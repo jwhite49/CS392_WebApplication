@@ -221,5 +221,66 @@ namespace CS392_WebApplication.Pages.Admin
             await _productsContext.SaveChangesAsync();
             return Page();
         }
+
+        public class RemoveDuplicatesResult
+        {
+            public int DuplicatesRemoved { get; set; }
+            public int GroupsAffected { get; set; }
+            public int ListItemsReassigned { get; set; }
+        }
+
+        public RemoveDuplicatesResult? DuplicateRemovalResult { get; set; }
+
+        public async Task<IActionResult> OnPostRemoveDuplicatesAsync()
+        {
+            // Group all products by lower-case name, keep the lowest-ID record per group
+            var allProducts = await _productsContext.Products
+                .OrderBy(p => p.product_ID)
+                .ToListAsync();
+
+            var duplicateGroups = allProducts
+                .GroupBy(p => p.product_name.ToLower())
+                .Where(g => g.Count() > 1)
+                .ToList();
+
+            int duplicatesRemoved = 0;
+            int listItemsReassigned = 0;
+
+            foreach (var group in duplicateGroups)
+            {
+                var ordered = group.OrderBy(p => p.product_ID).ToList();
+                var keeper = ordered.First();
+                var duplicates = ordered.Skip(1).ToList();
+                var duplicateIds = duplicates.Select(p => p.product_ID).ToList();
+
+                // Reassign list items that reference a duplicate to the kept product
+                var affectedItems = await _productsContext.Product_list_items
+                    .Where(i => duplicateIds.Contains(i.product_ID))
+                    .ToListAsync();
+
+                foreach (var item in affectedItems)
+                {
+                    item.product_ID = keeper.product_ID;
+                    listItemsReassigned++;
+                }
+
+                if (affectedItems.Any())
+                    await _productsContext.SaveChangesAsync();
+
+                _productsContext.Products.RemoveRange(duplicates);
+                await _productsContext.SaveChangesAsync();
+
+                duplicatesRemoved += duplicates.Count;
+            }
+
+            DuplicateRemovalResult = new RemoveDuplicatesResult
+            {
+                DuplicatesRemoved = duplicatesRemoved,
+                GroupsAffected = duplicateGroups.Count,
+                ListItemsReassigned = listItemsReassigned,
+            };
+
+            return Page();
+        }
     }
 }

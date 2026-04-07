@@ -176,6 +176,24 @@ namespace CS392_WebApplication.Pages.ProductPages.Catalog
             }
 
             // SORTING
+            bool isDefaultView = string.IsNullOrEmpty(Sort) && string.IsNullOrEmpty(Search) && string.IsNullOrEmpty(Category);
+
+            if (isDefaultView)
+            {
+                // Randomize order for the default catalog view
+                TotalItems = await query.CountAsync();
+
+                if (PageNumber < 1) PageNumber = 1;
+                if (TotalItems > 0 && PageNumber > TotalPages) PageNumber = TotalPages;
+
+                Products = (await query.ToListAsync())
+                    .OrderBy(_ => Guid.NewGuid())
+                    .Skip((PageNumber - 1) * PageSize)
+                    .Take(PageSize)
+                    .ToList();
+            }
+            else
+            {
             query = Sort switch
             {
                 "name_asc" => query.OrderBy(p => p.product_name),
@@ -251,6 +269,7 @@ namespace CS392_WebApplication.Pages.ProductPages.Catalog
                         .ToList();
                 }
             }
+            } // end else (search/sort/category active)
         }
     }
 }
