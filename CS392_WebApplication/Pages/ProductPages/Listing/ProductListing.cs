@@ -82,26 +82,49 @@ namespace CS392_WebApplication.Pages.ProductPages.Listing
             if (TempData.Peek("UndoListId") is int undoListId)
                 LastAddedListId = undoListId;
 
-            // PRICE COMPARISONS: search SerpAPI for other retailers selling this product
+            // PRICE COMPARISONS: use SerpAPI product offers endpoint if we have a product_id,
+            // otherwise fall back to a name search (gives serpapi_link results which aren't direct buy links).
             try
             {
-                var results = _serpApiService.SearchProducts(Product.product_name);
-                foreach (JObject result in results ?? new JArray())
+                JArray offers;
+
+                if (!string.IsNullOrEmpty(Product.google_product_id))
                 {
-                    if (PriceComparisons.Count >= 6) break;
+                    // Best path: real retailer offer URLs from the product details endpoint
+                    offers = await _serpApiService.GetProductOffersAsync(Product.google_product_id);
+                    foreach (JObject offer in offers)
+                    {
+                        if (PriceComparisons.Count >= 6) break;
 
-                    var url = result["serpapi_link"]?.ToString()?.Trim() is { Length: > 0 } u ? u
-                              : result["link"]?.ToString();
-                    var source = result["source"]?.ToString();
+                        var url = offer["link"]?.ToString();
+                        var source = offer["name"]?.ToString();
 
-                    if (string.IsNullOrEmpty(url) || string.IsNullOrEmpty(source)) continue;
+                        if (string.IsNullOrEmpty(url) || string.IsNullOrEmpty(source)) continue;
+                        if (source.Equals(Product.source_name, StringComparison.OrdinalIgnoreCase)) continue;
 
-                    // Skip if it's the same source already shown
-                    if (source.Equals(Product.source_name, StringComparison.OrdinalIgnoreCase)) continue;
+                        double.TryParse(offer["extracted_price"]?.ToString(), out double price);
+                        var logo = offer["source_icon"]?.ToString();
+                        PriceComparisons.Add((source, logo, price, url));
+                    }
+                }
+                else
+                {
+                    // Fallback: search by name — links will be serpapi_link (not direct retailer URLs)
+                    var results = _serpApiService.SearchProducts(Product.product_name);
+                    foreach (JObject result in results ?? new JArray())
+                    {
+                        if (PriceComparisons.Count >= 6) break;
 
-                    double.TryParse(result["extracted_price"]?.ToString(), out double price);
-                    var logo = result["source_icon"]?.ToString();
-                    PriceComparisons.Add((source, logo, price, url));
+                        var url = result["link"]?.ToString();
+                        var source = result["source"]?.ToString();
+
+                        if (string.IsNullOrEmpty(url) || string.IsNullOrEmpty(source)) continue;
+                        if (source.Equals(Product.source_name, StringComparison.OrdinalIgnoreCase)) continue;
+
+                        double.TryParse(result["extracted_price"]?.ToString(), out double price);
+                        var logo = result["source_icon"]?.ToString();
+                        PriceComparisons.Add((source, logo, price, url));
+                    }
                 }
             }
             catch (Exception ex)

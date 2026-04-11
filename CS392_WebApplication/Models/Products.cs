@@ -53,5 +53,9 @@ namespace CS392_WebApplication.Models
 
         [Column("item_reviews")]
         public int? reviews { get; set; }
+
+        [Column("google_product_id")]
+        [MaxLength(100)]
+        public string? google_product_id { get; set; }
     }
 }

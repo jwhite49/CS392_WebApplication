@@ -111,30 +111,39 @@
             }
 
             <!-- Retailer Link -->
+            @{
+                var encodedName = Uri.EscapeDataString(Model.Product.product_name ?? "");
+                var hasRealUrl = !string.IsNullOrWhiteSpace(Model.Product.retail_URL)
+                                 && Model.Product.retail_URL != "#"
+                                 && Model.Product.retail_URL.StartsWith("http")
+                                 && !Model.Product.retail_URL.Contains("serpapi.com");
+                var buyUrl = hasRealUrl
+                    ? Model.Product.retail_URL
+                    : $"https://www.google.com/search?tbm=shop&q={encodedName}";
+            }
             <div class="mt-4 p-3 border rounded bg-light">
                 <h5>Buy This Item</h5>
+                <a href="@buyUrl"
+                   target="_blank"
+                   rel="noopener"
+                   class="btn btn-primary mt-2">
 
-                @if (!string.IsNullOrWhiteSpace(Model.Product.retail_URL))
-                {
-                    <a href="@Model.Product.retail_URL"
-                       target="_blank"
-                       rel="noopener"
-                       class="btn btn-primary mt-2">
+                    @if (!string.IsNullOrWhiteSpace(Model.Product.source_logo))
+                    {
+                        <img src="@Model.Product.source_logo"
+                             alt="@Model.Product.source_name"
+                             style="height: 20px; margin-right: 8px;" />
+                    }
 
-                        @if (!string.IsNullOrWhiteSpace(Model.Product.source_logo))
-                        {
-                            <img src="@Model.Product.source_logo"
-                                 alt="@Model.Product.source_name"
-                                 style="height: 20px; margin-right: 8px;" />
-                        }
-
-                        Buy on @(Model.Product.source_name ?? "Retailer")
-                    </a>
-                }
-                else
-                {
-                    <p class="text-muted">No retailer link available</p>
-                }
+                    @if (hasRealUrl)
+                    {
+                        <span>Buy on @(Model.Product.source_name ?? "Retailer")</span>
+                    }
+                    else
+                    {
+                        <span>Search on Google Shopping</span>
+                    }
+                </a>
             </div>
 
             <!-- Compare Prices -->
