@@ -1,6 +1,7 @@
 using CS392_WebApplication.Data;
 using CS392_WebApplication.Models;
 using CS392_WebApplication.API;
+using CS392_WebApplication.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -17,6 +18,8 @@ namespace CS392_WebApplication.Pages.ProductPages.Listing
         private readonly UserManager<IdentityUser> _userManager;
         private readonly ILogger<ProductListingModel> _logger;
         private readonly apiConfig _serpApiService;
+        private readonly GeminiService _geminiService;
+        private readonly SystemLogDbContext _systemLogContext;
 
         public ProductListingModel(
             ILogger<ProductListingModel> logger,
@@ -24,7 +27,9 @@ namespace CS392_WebApplication.Pages.ProductPages.Listing
             Product_listDbContext listContext,
             UserDbContext userContext,
             UserManager<IdentityUser> userManager,
-            apiConfig serpApiService)
+            apiConfig serpApiService,
+            GeminiService geminiService,
+            SystemLogDbContext systemLogContext)
         {
             _logger = logger;
             _productsContext = productsContext;
@@ -32,6 +37,8 @@ namespace CS392_WebApplication.Pages.ProductPages.Listing
             _userContext = userContext;
             _userManager = userManager;
             _serpApiService = serpApiService;
+            _geminiService = geminiService;
+            _systemLogContext = systemLogContext;
         }
 
         public Products Product { get; set; } = default!;
@@ -45,6 +52,9 @@ namespace CS392_WebApplication.Pages.ProductPages.Listing
 
         // Track which list was just added to (for undo)
         public int? LastAddedListId { get; set; }
+
+        // Recommended similar products
+        public List<Products> RecommendedProducts { get; set; } = new();
 
         // GET
         public async Task<IActionResult> OnGetAsync(int id)
@@ -132,7 +142,76 @@ namespace CS392_WebApplication.Pages.ProductPages.Listing
                 _logger.LogWarning(ex, "SerpAPI price comparison failed for product {Id}", id);
             }
 
+            // RECOMMENDED: find up to 5 products that share keywords with this product's name
+            var keywords = Product.product_name
+                .Split(' ', StringSplitOptions.RemoveEmptyEntries)
+                .Where(w => w.Length > 3)
+                .Select(w => w.ToLower())
+                .ToList();
+
+            if (keywords.Any())
+            {
+                var allOthers = await _productsContext.Products
+                    .Where(p => p.product_ID != Product.product_ID)
+                    .ToListAsync();
+
+                RecommendedProducts = allOthers
+                    .Select(p => new
+                    {
+                        Product = p,
+                        Score = keywords.Count(kw =>
+                            p.product_name.Contains(kw, StringComparison.OrdinalIgnoreCase))
+                    })
+                    .Where(x => x.Score > 0)
+                    .OrderByDescending(x => x.Score)
+                    .Take(5)
+                    .Select(x => x.Product)
+                    .ToList();
+            }
+
             return Page();
+        }
+
+        // GEMINI AI PRICE SEARCH (AJAX endpoint)
+        public async Task<IActionResult> OnGetGeminiPricesAsync(int id)
+        {
+            var product = await _productsContext.Products
+                .FirstOrDefaultAsync(p => p.product_ID == id);
+
+            if (product == null)
+                return new JsonResult(new { success = true, data = "[]" });
+
+            try
+            {
+                var result = await _geminiService.SearchLivePricesAsync(
+                    product.product_name, product.retail_price, product.source_name);
+                return new JsonResult(new { success = true, data = result });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Gemini price search failed for product {Id}", id);
+
+                try
+                {
+                    _systemLogContext.SystemLog.Add(new CS392_WebApplication.Models.SystemLog
+                    {
+                        Timestamp = DateTime.UtcNow,
+                        Level = "Error",
+                        EventType = "GeminiPriceSearch",
+                        Message = $"Gemini AI price search failed for product ID {id}: {ex.Message}",
+                        StackTrace = ex.StackTrace,
+                        Page = "/ProductPages/Listing"
+                    });
+                    await _systemLogContext.SaveChangesAsync();
+                }
+                catch (Exception logEx)
+                {
+                    _logger.LogError(logEx, "Failed to write Gemini error to SystemLog");
+                }
+
+                // Return empty result — do not expose error details to the user
+                return new JsonResult(new { success = true, data = "[]" });
+            }
         }
 
         // ADD TO LIST (now accepts listId)
