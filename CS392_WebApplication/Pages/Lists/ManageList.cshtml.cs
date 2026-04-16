@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
 using CS392_WebApplication.Models;
 using CS392_WebApplication.Data;
+using System.Security.Cryptography;
 
 namespace CS392_WebApplication.Pages.Lists
 {
@@ -37,8 +38,9 @@ namespace CS392_WebApplication.Pages.Lists
             public string Name { get; set; } = "Unknown";
             public string Email { get; set; } = "";
             public DateTime AddedAt { get; set; }
-            public bool IsCompleted { get; set; }
             public int StudentListId { get; set; }
+            public int CompletedItems { get; set; }
+            public int TotalItems { get; set; }
         }
 
         [BindProperty]
@@ -56,10 +58,12 @@ namespace CS392_WebApplication.Pages.Lists
             if (identityUser == null) return RedirectToPage("/Account/Login", new { area = "Identity" });
 
             var appUser = await _userContext.User
+                .AsNoTracking()
                 .FirstOrDefaultAsync(u => u.Email == identityUser.Email);
             if (appUser == null) return RedirectToPage("/Error");
 
             ManagedList = await _listContext.Product_list
+                .AsNoTracking()
                 .FirstOrDefaultAsync(l => l.listID == listId && l.userID == appUser.UserID);
 
             if (ManagedList == null)
@@ -72,44 +76,80 @@ namespace CS392_WebApplication.Pages.Lists
             EditDescription = ManagedList.description;
             EditGradeLevel = ManagedList.grade_level;
 
-            // Load items with product details
+            // OPTIMIZED: Bulk load items and products
             var items = await _productsContext.Product_list_items
+                .AsNoTracking()
                 .Where(i => i.list_ID == listId)
                 .ToListAsync();
 
-            foreach (var item in items)
+            if (items.Any())
             {
-                var product = await _productsContext.Products
-                    .FirstOrDefaultAsync(p => p.product_ID == item.product_ID);
-                if (product != null)
-                    ListItems.Add((item, product));
+                var productIds = items.Select(i => i.product_ID).Distinct().ToList();
+                var products = await _productsContext.Products
+                    .AsNoTracking()
+                    .Where(p => productIds.Contains(p.product_ID))
+                    .ToDictionaryAsync(p => p.product_ID);
+
+                foreach (var item in items)
+                {
+                    if (products.TryGetValue(item.product_ID, out var product))
+                    {
+                        ListItems.Add((item, product));
+                    }
+                }
             }
 
-            // Load students who imported this list
+            // OPTIMIZED: Bulk load student data
             var studentRecords = await _listContext.PublishedList_Student
+                .AsNoTracking()
                 .Where(ps => ps.published_listID == listId)
                 .OrderByDescending(ps => ps.added_at)
                 .ToListAsync();
 
-            foreach (var record in studentRecords)
+            if (studentRecords.Any())
             {
-                var student = await _userContext.User
-                    .FirstOrDefaultAsync(u => u.UserID == record.student_userID);
+                // Bulk load all students
+                var studentUserIds = studentRecords.Select(sr => sr.student_userID).Distinct().ToList();
+                var students = await _userContext.User
+                    .AsNoTracking()
+                    .Where(u => studentUserIds.Contains(u.UserID))
+                    .ToDictionaryAsync(u => u.UserID);
 
-                Students.Add(new StudentViewModel
+                // Bulk load all student list items
+                var studentListIds = studentRecords.Select(sr => sr.student_listID).ToList();
+                var allStudentItems = await _productsContext.Product_list_items
+                    .AsNoTracking()
+                    .Where(i => studentListIds.Contains(i.list_ID))
+                    .ToListAsync();
+
+                var itemsByListId = allStudentItems
+                    .GroupBy(i => i.list_ID)
+                    .ToDictionary(g => g.Key, g => g.ToList());
+
+                foreach (var record in studentRecords)
                 {
-                    Name = student != null ? $"{student.FirstName} {student.LastName}" : "Unknown",
-                    Email = student?.Email ?? "",
-                    AddedAt = record.added_at,
-                    IsCompleted = record.is_completed,
-                    StudentListId = record.student_listID
-                });
+                    var studentItems = itemsByListId.GetValueOrDefault(record.student_listID, new List<Product_list_items>());
+                    var completedCount = studentItems.Count(i => i.is_purchased);
+                    var totalCount = studentItems.Count;
+
+                    var studentUser = students.GetValueOrDefault(record.student_userID);
+
+                    Students.Add(new StudentViewModel
+                    {
+                        Name = studentUser != null ? $"{studentUser.FirstName} {studentUser.LastName}" : "Unknown",
+                        Email = studentUser?.Email ?? "",
+                        AddedAt = record.added_at,
+                        StudentListId = record.student_listID,
+                        CompletedItems = completedCount,
+                        TotalItems = totalCount
+                    });
+                }
             }
 
             return Page();
         }
 
-        public async Task<IActionResult> OnPostTogglePublishAsync(int listId)
+        public async Task<IActionResult> OnPostUpdatePublishModeAsync(int listId, int publishMode)
         {
             var identityUser = await _userManager.GetUserAsync(User);
             if (identityUser == null) return RedirectToPage("/Account/Login", new { area = "Identity" });
@@ -127,14 +167,33 @@ namespace CS392_WebApplication.Pages.Lists
                 return RedirectToPage("/Lists/List");
             }
 
-            list.is_published = !list.is_published;
+            var newMode = (PublishMode)publishMode;
+            list.publish_mode = newMode;
+            list.is_published = (newMode != PublishMode.None);
+
+            // Generate private code if switching to Private mode
+            if (newMode == PublishMode.Private && string.IsNullOrEmpty(list.private_code))
+            {
+                list.private_code = GeneratePrivateCode();
+            }
+            // Clear private code if not using Private mode
+            else if (newMode != PublishMode.Private)
+            {
+                list.private_code = null;
+            }
+
             list.updated_at = DateTime.UtcNow;
             await _listContext.SaveChangesAsync();
 
-            TempData["SuccessMessage"] = list.is_published
-                ? "List published successfully! Students can now find it."
-                : "List unpublished. It is no longer visible to students.";
+            var message = newMode switch
+            {
+                PublishMode.None => "List unpublished. It is now private to you.",
+                PublishMode.Public => "List published publicly! Students can browse and add it.",
+                PublishMode.Private => $"List published privately! Share code: {list.private_code}",
+                _ => "Publishing settings updated."
+            };
 
+            TempData["SuccessMessage"] = message;
             return RedirectToPage(new { listId });
         }
 
@@ -167,7 +226,7 @@ namespace CS392_WebApplication.Pages.Lists
         }
 
         public async Task<IActionResult> OnPostUpdateItemAsync(
-            int listId, int listItemId, string? teacherNote, bool isRequired, int? recommendedQuantity)
+            int listId, int listItemId, string? teacherNote, int requirementLevel, int? recommendedQuantity)
         {
             var identityUser = await _userManager.GetUserAsync(User);
             if (identityUser == null) return RedirectToPage("/Account/Login", new { area = "Identity" });
@@ -195,7 +254,7 @@ namespace CS392_WebApplication.Pages.Lists
             }
 
             item.teacher_note = teacherNote;
-            item.is_required = isRequired;
+            item.requirement_level = (Product_list_items.RequirementLevel)requirementLevel;
             item.recommended_quantity = recommendedQuantity;
             await _productsContext.SaveChangesAsync();
 
@@ -204,6 +263,22 @@ namespace CS392_WebApplication.Pages.Lists
 
             TempData["SuccessMessage"] = "Item updated.";
             return RedirectToPage(new { listId });
+        }
+
+        private string GeneratePrivateCode()
+        {
+            const string chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+            var random = new char[8];
+            using (var rng = RandomNumberGenerator.Create())
+            {
+                var buffer = new byte[8];
+                rng.GetBytes(buffer);
+                for (int i = 0; i < 8; i++)
+                {
+                    random[i] = chars[buffer[i] % chars.Length];
+                }
+            }
+            return new string(random);
         }
     }
 }

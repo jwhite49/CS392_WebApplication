@@ -18,8 +18,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Logging;
-using CS392_WebApplication.Data;       // ✅ added
-using CS392_WebApplication.Models;     // ✅ added
+using CS392_WebApplication.Data;
+using CS392_WebApplication.Models;
 
 namespace CS392_WebApplication.Areas.Identity.Pages.Account
 {
@@ -31,7 +31,8 @@ namespace CS392_WebApplication.Areas.Identity.Pages.Account
         private readonly IUserEmailStore<IdentityUser> _emailStore;
         private readonly ILogger<RegisterModel> _logger;
         private readonly IEmailSender _emailSender;
-        private readonly UserDbContext _userDbContext;  // ✅ added
+        private readonly UserDbContext _userDbContext;
+        private readonly SystemLogDbContext _logContext;
 
         public RegisterModel(
             UserManager<IdentityUser> userManager,
@@ -39,7 +40,8 @@ namespace CS392_WebApplication.Areas.Identity.Pages.Account
             SignInManager<IdentityUser> signInManager,
             ILogger<RegisterModel> logger,
             IEmailSender emailSender,
-            UserDbContext userDbContext)  // ✅ added
+            UserDbContext userDbContext,
+            SystemLogDbContext logContext)
         {
             _userManager = userManager;
             _userStore = userStore;
@@ -47,7 +49,8 @@ namespace CS392_WebApplication.Areas.Identity.Pages.Account
             _signInManager = signInManager;
             _logger = logger;
             _emailSender = emailSender;
-            _userDbContext = userDbContext;  // ✅ added
+            _userDbContext = userDbContext;
+            _logContext = logContext;
         }
 
         [BindProperty]
@@ -62,12 +65,12 @@ namespace CS392_WebApplication.Areas.Identity.Pages.Account
             [Required]
             [Display(Name = "First Name")]
             [MaxLength(20)]
-            public string FirstName { get; set; }  // ✅ must be here
+            public string FirstName { get; set; }
 
             [Required]
             [Display(Name = "Last Name")]
             [MaxLength(20)]
-            public string LastName { get; set; }   // ✅ must be here
+            public string LastName { get; set; }
 
             [Required]
             [EmailAddress]
@@ -108,7 +111,7 @@ namespace CS392_WebApplication.Areas.Identity.Pages.Account
                 {
                     _logger.LogInformation("User created a new account with password.");
 
-                    // ✅ Save to your own User table after Identity succeeds
+                    // Save to your own User table after Identity succeeds
                     var myUser = new User
                     {
                         Username = Input.Email,
@@ -120,6 +123,21 @@ namespace CS392_WebApplication.Areas.Identity.Pages.Account
                     _userDbContext.User.Add(myUser);
                     await _userManager.AddToRoleAsync(user, "User");
                     await _userDbContext.SaveChangesAsync();
+
+                    // Log new user registration
+                    var registrationLog = new SystemLog
+                    {
+                        Timestamp = DateTime.UtcNow,
+                        Level = "Information",
+                        EventType = "UserRegistration",
+                        Message = $"New user registered: {Input.Email} ({Input.FirstName} {Input.LastName})",
+                        UserId = user.Id,
+                        TargetUserId = user.Id,
+                        Page = "/Identity/Account/Register",
+                        AdditionalData = $"{{ \"email\": \"{Input.Email}\", \"firstName\": \"{Input.FirstName}\", \"lastName\": \"{Input.LastName}\", \"defaultRole\": \"User\" }}"
+                    };
+                    _logContext.SystemLog.Add(registrationLog);
+                    await _logContext.SaveChangesAsync();
 
                     var userId = await _userManager.GetUserIdAsync(user);
                     var code = await _userManager.GenerateEmailConfirmationTokenAsync(user);

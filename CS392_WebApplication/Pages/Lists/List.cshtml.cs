@@ -29,6 +29,7 @@ namespace CS392_WebApplication.Pages.Lists
         public List<Product_list> UserLists { get; set; } = new();
         public Dictionary<int, int> ListItemCounts { get; set; } = new();
         public HashSet<int> ImportedListIds { get; set; } = new();
+        public Dictionary<int, (int CompletedItems, int TotalItems)> ImportedListProgress { get; set; } = new();
         public bool IsAdminOrSchool { get; set; }
 
         public async Task<IActionResult> OnGetAsync()
@@ -38,6 +39,7 @@ namespace CS392_WebApplication.Pages.Lists
                 return RedirectToPage("/Account/Login", new { area = "Identity" });
 
             var appUser = await _userContext.User
+                .AsNoTracking()
                 .FirstOrDefaultAsync(u => u.Email == identityUser.Email);
 
             if (appUser == null)
@@ -46,23 +48,47 @@ namespace CS392_WebApplication.Pages.Lists
             IsAdminOrSchool = User.IsInRole("Admin") || User.IsInRole("School");
 
             UserLists = await _listContext.Product_list
+                .AsNoTracking()
                 .Where(l => l.userID == appUser.UserID)
                 .OrderByDescending(l => l.updated_at)
                 .ToListAsync();
 
             // Determine which lists are imported from published lists
             var imported = await _listContext.PublishedList_Student
+                .AsNoTracking()
                 .Where(ps => ps.student_userID == appUser.UserID)
                 .Select(ps => ps.student_listID)
                 .ToListAsync();
 
             ImportedListIds = new HashSet<int>(imported);
 
-            foreach (var list in UserLists)
+            // Get item counts and progress for all lists
+            if (UserLists.Any())
             {
-                var count = await _productsContext.Product_list_items
-                    .CountAsync(i => i.list_ID == list.listID);
-                ListItemCounts[list.listID] = count;
+                var listIds = UserLists.Select(l => l.listID).ToList();
+                
+                // Bulk load all items for all lists
+                var allItems = await _productsContext.Product_list_items
+                    .AsNoTracking()
+                    .Where(i => listIds.Contains(i.list_ID))
+                    .ToListAsync();
+
+                var itemsByListId = allItems
+                    .GroupBy(i => i.list_ID)
+                    .ToDictionary(g => g.Key, g => g.ToList());
+
+                foreach (var list in UserLists)
+                {
+                    var items = itemsByListId.GetValueOrDefault(list.listID, new List<Product_list_items>());
+                    ListItemCounts[list.listID] = items.Count;
+                    
+                    // Track progress for imported lists
+                    if (ImportedListIds.Contains(list.listID))
+                    {
+                        var completedCount = items.Count(i => i.is_purchased);
+                        ImportedListProgress[list.listID] = (completedCount, items.Count);
+                    }
+                }
             }
 
             return Page();

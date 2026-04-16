@@ -25,13 +25,7 @@ namespace CS392_WebApplication.Pages.Admin.SystemLogs
         public string? EventType { get; set; }
 
         [BindProperty(SupportsGet = true)]
-        public string? UserId { get; set; }
-
-        [BindProperty(SupportsGet = true)]
-        public string? TargetUserId { get; set; }
-
-        [BindProperty(SupportsGet = true)]
-        public string? PageFilter { get; set; }
+        public string? SearchTerm { get; set; }
 
         [BindProperty(SupportsGet = true)]
         public DateTime? StartDate { get; set; }
@@ -60,14 +54,18 @@ namespace CS392_WebApplication.Pages.Admin.SystemLogs
             if (!string.IsNullOrEmpty(EventType))
                 query = query.Where(l => l.EventType == EventType);
 
-            if (!string.IsNullOrEmpty(UserId))
-                query = query.Where(l => l.UserId == UserId);
-
-            if (!string.IsNullOrEmpty(TargetUserId))
-                query = query.Where(l => l.TargetUserId == TargetUserId);
-
-            if (!string.IsNullOrEmpty(PageFilter))
-                query = query.Where(l => l.Page.Contains(PageFilter));
+            // Enhanced search - searches across multiple fields
+            if (!string.IsNullOrEmpty(SearchTerm))
+            {
+                var searchLower = SearchTerm.ToLower();
+                query = query.Where(l => 
+                    l.Message.ToLower().Contains(searchLower) ||
+                    (l.UserId != null && l.UserId.ToLower().Contains(searchLower)) ||
+                    (l.TargetUserId != null && l.TargetUserId.ToLower().Contains(searchLower)) ||
+                    (l.Page != null && l.Page.ToLower().Contains(searchLower)) ||
+                    (l.AdditionalData != null && l.AdditionalData.ToLower().Contains(searchLower))
+                );
+            }
 
             if (StartDate.HasValue)
                 query = query.Where(l => l.Timestamp >= StartDate.Value);

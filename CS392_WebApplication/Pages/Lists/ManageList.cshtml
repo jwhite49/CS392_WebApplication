@@ -1,4 +1,4 @@
-@page "{listId:int}"
+﻿@page "{listId:int}"
 @model CS392_WebApplication.Pages.Lists.ManageListModel
 @{
     ViewData["Title"] = "Manage List";
@@ -24,32 +24,53 @@
     </div>
 }
 
-<!-- Publish Toggle -->
+<!-- Publish Configuration -->
 <div class="card shadow-sm mb-4">
-    <div class="card-body d-flex justify-content-between align-items-center">
-        <div>
-            <h5 class="mb-1">Publish Status</h5>
-            @if (Model.ManagedList.is_published)
-            {
-                <span class="badge bg-success fs-6">Published</span>
-                <p class="text-muted mb-0 mt-1">Students can find and add this list.</p>
-            }
-            else
-            {
-                <span class="badge bg-secondary fs-6">Unpublished</span>
-                <p class="text-muted mb-0 mt-1">This list is only visible to you.</p>
-            }
-        </div>
-        <form method="post" asp-page-handler="TogglePublish">
+    <div class="card-body">
+        <h5 class="mb-3">Publishing Settings</h5>
+        
+        <form method="post" asp-page-handler="UpdatePublishMode">
             <input type="hidden" name="listId" value="@Model.ManagedList.listID" />
-            @if (Model.ManagedList.is_published)
+            
+            <div class="mb-3">
+                <label class="form-label fw-bold">Publishing Mode</label>
+                
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="publishMode" id="modeNone" 
+                           value="0" checked="@(Model.ManagedList.publish_mode == CS392_WebApplication.Models.PublishMode.None)" />
+                    <label class="form-check-label" for="modeNone">
+                        <strong>Not Published</strong> - Only visible to you
+                    </label>
+                </div>
+                
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="publishMode" id="modePublic" 
+                           value="1" checked="@(Model.ManagedList.publish_mode == CS392_WebApplication.Models.PublishMode.Public)" />
+                    <label class="form-check-label" for="modePublic">
+                        <strong>Public</strong> - All students can browse and add this list
+                    </label>
+                </div>
+                
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="publishMode" id="modePrivate" 
+                           value="2" checked="@(Model.ManagedList.publish_mode == CS392_WebApplication.Models.PublishMode.Private)" />
+                    <label class="form-check-label" for="modePrivate">
+                        <strong>Private</strong> - Only accessible via private code
+                    </label>
+                </div>
+            </div>
+
+            @if (Model.ManagedList.publish_mode == CS392_WebApplication.Models.PublishMode.Private && !string.IsNullOrEmpty(Model.ManagedList.private_code))
             {
-                <button class="btn btn-warning">Unpublish</button>
+                <div class="alert alert-info">
+                    <strong>Private Access Code:</strong> 
+                    <code class="fs-5">@Model.ManagedList.private_code</code>
+                    <br />
+                    <small class="text-muted">Share this code with your students to allow them to import this list.</small>
+                </div>
             }
-            else
-            {
-                <button class="btn btn-success">Publish</button>
-            }
+
+            <button type="submit" class="btn btn-primary">Save Publishing Settings</button>
         </form>
     </div>
 </div>
@@ -81,17 +102,18 @@
     </div>
 </div>
 
-<!-- List Items with Teacher Note Editing -->
+<!-- List Items with Enhanced Teacher Controls -->
 <div class="card shadow-sm mb-4">
     <div class="card-body">
         <h5 class="card-title">Items (@Model.ListItems.Count)</h5>
         <p class="text-muted small mb-3">
-            Set teacher notes, mark items as required/optional, and set recommended quantities for students.
+            Configure requirement levels, teacher notes, and recommended quantities for students.
         </p>
 
         @if (Model.ListItems.Count == 0)
         {
             <p class="text-muted">No items in this list yet. Add products from the catalog.</p>
+            <a href="/ProductPages/Catalog/Index" class="btn btn-outline-primary">Browse Products</a>
         }
         else
         {
@@ -128,7 +150,7 @@
                                 <input type="hidden" name="listItemId" value="@item.list_items_ID" />
 
                                 <div class="row g-2 align-items-end">
-                                    <div class="col-md-5">
+                                    <div class="col-md-4">
                                         <label class="form-label small mb-1">Teacher Note</label>
                                         <input type="text" name="teacherNote" value="@item.teacher_note"
                                                class="form-control form-control-sm"
@@ -139,20 +161,22 @@
                                         <input type="number" name="recommendedQuantity"
                                                value="@item.recommended_quantity"
                                                class="form-control form-control-sm"
-                                               min="1" placeholder="�" />
+                                               min="1" placeholder="—" />
                                     </div>
                                     <div class="col-md-3">
-                                        <div class="form-check mt-3">
-                                            <input type="checkbox" name="isRequired" value="true"
-                                                   class="form-check-input"
-                                                   id="req-@item.list_items_ID"
-                                                   @(item.is_required ? "checked" : "") />
-                                            <label class="form-check-label small" for="req-@item.list_items_ID">
-                                                Required Item
-                                            </label>
-                                        </div>
+                                        <label class="form-label small mb-1">Requirement Level</label>
+                                        <select name="requirementLevel" class="form-select form-select-sm">
+                                            @{
+                                                var isRequired = item.requirement_level == CS392_WebApplication.Models.Product_list_items.RequirementLevel.Required;
+                                                var isRecommended = item.requirement_level == CS392_WebApplication.Models.Product_list_items.RequirementLevel.Recommended;
+                                                var isOptional = item.requirement_level == CS392_WebApplication.Models.Product_list_items.RequirementLevel.Optional;
+                                            }
+                                            <option value="0" selected="@isRequired">Required</option>
+                                            <option value="1" selected="@isRecommended">Recommended</option>
+                                            <option value="2" selected="@isOptional">Optional</option>
+                                        </select>
                                     </div>
-                                    <div class="col-md-2">
+                                    <div class="col-md-3">
                                         <button type="submit" class="btn btn-sm btn-outline-primary w-100">
                                             Save
                                         </button>
@@ -170,20 +194,52 @@
 <!-- List Stats -->
 <div class="card shadow-sm mb-4">
     <div class="card-body">
-        <h5 class="card-title">Stats</h5>
-        <p class="mb-1"><strong>Total Price:</strong> $@Model.ManagedList.total_price.ToString("0.00")</p>
-        <p class="mb-0"><strong>Students who added this list:</strong> @Model.Students.Count</p>
+        <h5 class="card-title">Statistics</h5>
+        <div class="row">
+            <div class="col-md-4">
+                <p class="mb-1"><strong>Total Price:</strong> $@Model.ManagedList.total_price.ToString("0.00")</p>
+            </div>
+            <div class="col-md-4">
+                <p class="mb-1"><strong>Total Items:</strong> @Model.ListItems.Count</p>
+            </div>
+            <div class="col-md-4">
+                <p class="mb-0"><strong>Students:</strong> @Model.Students.Count imported this list</p>
+            </div>
+        </div>
+        @if (Model.Students.Any())
+        {
+            var completedCount = Model.Students.Count(s => s.CompletedItems == s.TotalItems && s.TotalItems > 0);
+            var inProgressCount = Model.Students.Count(s => s.CompletedItems < s.TotalItems);
+            <div class="row mt-2">
+                <div class="col-md-4">
+                    <span class="badge bg-success">@completedCount Completed</span>
+                </div>
+                <div class="col-md-4">
+                    <span class="badge bg-warning text-dark">@inProgressCount In Progress</span>
+                </div>
+            </div>
+        }
     </div>
 </div>
 
-<!-- Students Table -->
+<!-- Students Table with Progress -->
 <div class="card shadow-sm mb-4">
     <div class="card-body">
-        <h5 class="card-title">Students</h5>
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="card-title mb-0">Student Progress</h5>
+            @if (Model.Students.Any(s => s.CompletedItems < s.TotalItems))
+            {
+                var incompleteEmails = string.Join(",", Model.Students.Where(s => s.CompletedItems < s.TotalItems).Select(s => s.Email));
+                <button type="button" class="btn btn-sm btn-outline-primary" onclick="copyIncompleteEmails()">
+                    <i class="bi bi-clipboard"></i> Copy Incomplete Student Emails
+                </button>
+                <input type="hidden" id="incompleteEmails" value="@incompleteEmails" />
+            }
+        </div>
 
         @if (Model.Students.Count == 0)
         {
-            <p class="text-muted">No students have added this list yet.</p>
+            <p class="text-muted">No students have imported this list yet.</p>
         }
         else
         {
@@ -194,25 +250,47 @@
                             <th>Name</th>
                             <th>Email</th>
                             <th>Added On</th>
-                            <th>Status</th>
+                            <th>Progress</th>
+                            <th>Completed Items</th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         @foreach (var student in Model.Students)
                         {
+                            var progressPercent = student.TotalItems > 0 
+                                ? (int)((student.CompletedItems * 100.0) / student.TotalItems) 
+                                : 0;
+                            
                             <tr>
                                 <td>@student.Name</td>
-                                <td>@student.Email</td>
+                                <td><small>@student.Email</small></td>
                                 <td>@student.AddedAt.ToShortDateString()</td>
                                 <td>
-                                    @if (student.IsCompleted)
+                                    <div class="progress" style="height: 20px; min-width: 100px;">
+                                        <div class="progress-bar @(progressPercent == 100 ? "bg-success" : "bg-primary")" 
+                                             role="progressbar" 
+                                             style="width: @progressPercent%"
+                                             aria-valuenow="@progressPercent" 
+                                             aria-valuemin="0" 
+                                             aria-valuemax="100">
+                                            @progressPercent%
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <strong>@student.CompletedItems</strong> / @student.TotalItems items
+                                    @if (progressPercent == 100 && student.TotalItems > 0)
                                     {
-                                        <span class="badge bg-success">Completed</span>
+                                        <span class="badge bg-success ms-1">✓</span>
                                     }
-                                    else
-                                    {
-                                        <span class="badge bg-warning text-dark">In Progress</span>
-                                    }
+                                </td>
+                                <td>
+                                    <a asp-page="/Lists/ViewStudentProgress" 
+                                       asp-route-studentListId="@student.StudentListId"
+                                       class="btn btn-sm btn-outline-info">
+                                        View Details
+                                    </a>
                                 </td>
                             </tr>
                         }
@@ -222,3 +300,32 @@
         }
     </div>
 </div>
+
+@section Scripts {
+    <script>
+        function copyIncompleteEmails() {
+            var emails = document.getElementById('incompleteEmails').value;
+            
+            // Create a temporary textarea to copy from
+            var tempTextArea = document.createElement('textarea');
+            tempTextArea.value = emails;
+            tempTextArea.style.position = 'fixed';
+            tempTextArea.style.opacity = '0';
+            document.body.appendChild(tempTextArea);
+            
+            tempTextArea.select();
+            tempTextArea.setSelectionRange(0, 99999); // For mobile devices
+            
+            try {
+                document.execCommand('copy');
+                
+                // Show success message
+                alert('Emails copied to clipboard! You can now paste them into your email client.\n\nEmails: ' + emails);
+            } catch (err) {
+                alert('Failed to copy emails. Please try again.');
+            }
+            
+            document.body.removeChild(tempTextArea);
+        }
+    </script>
+}

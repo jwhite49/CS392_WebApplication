@@ -27,7 +27,7 @@ namespace CS392_WebApplication.Pages.Lists
         }
 
         [BindProperty]
-        [Required]
+        [Required(ErrorMessage = "Please enter a title for your list")]
         [MaxLength(150)]
         public string Title { get; set; } = string.Empty;
 
@@ -36,7 +36,27 @@ namespace CS392_WebApplication.Pages.Lists
         public string? Description { get; set; }
 
         [BindProperty]
-        public string? GradeLevel { get; set; }
+        [Range(0.01, 999999.99, ErrorMessage = "Budget must be greater than $0")]
+        public double? BudgetAmount { get; set; }
+
+        [BindProperty]
+        [MaxLength(100)]
+        public string? ListCategory { get; set; }
+
+        // Predefined category options
+        public List<string> CategoryOptions { get; } = new()
+        {
+            "Elementary School Supplies",
+            "Middle School Supplies",
+            "High School Supplies",
+            "College - Dorm Essentials",
+            "College - Class Materials",
+            "Art & Craft Supplies",
+            "Sports Equipment",
+            "Birthday Wishlist",
+            "Holiday Shopping",
+            "Other"
+        };
 
         public void OnGet()
         {
@@ -45,7 +65,9 @@ namespace CS392_WebApplication.Pages.Lists
         public async Task<IActionResult> OnPostAsync()
         {
             if (!ModelState.IsValid)
+            {
                 return Page();
+            }
 
             var identityUser = await _userManager.GetUserAsync(User);
             if (identityUser == null)
@@ -57,26 +79,26 @@ namespace CS392_WebApplication.Pages.Lists
             if (appUser == null)
                 return RedirectToPage("/Error");
 
-            var isSchoolOrAdmin = User.IsInRole("Admin") || User.IsInRole("School");
-
             var newList = new Product_list
             {
                 userID = appUser.UserID,
                 title = Title,
                 description = Description,
-                grade_level = GradeLevel,
                 total_price = 0,
-                list_type = isSchoolOrAdmin ? ListType.School : ListType.User,
-                is_published = false,
+                list_type = ListType.User, // Student-created list
                 created_at = DateTime.UtcNow,
-                updated_at = DateTime.UtcNow
+                updated_at = DateTime.UtcNow,
+                is_published = false,
+                publish_mode = PublishMode.None,
+                budget_amount = BudgetAmount,
+                list_category = ListCategory
             };
 
             _listContext.Product_list.Add(newList);
             await _listContext.SaveChangesAsync();
 
             TempData["SuccessMessage"] = "List created successfully!";
-            return RedirectToPage("/Lists/List");
+            return RedirectToPage("/Lists/ListDetails", new { listId = newList.listID }); // Fixed: id -> listId
         }
     }
 }

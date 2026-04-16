@@ -69,25 +69,18 @@
                 <select class="form-select" asp-for="EventType">
                     <option value="">All</option>
                     <option>Exception</option>
+                    <option>SuccessfulLogin</option>
                     <option>FailedLogin</option>
-                    <option>RoleChange</option>
-                    <option>AccountChange</option>
+                    <option>UserRegistration</option>
+                    <option>SchoolAccountApproval</option>
+                    <option>SchoolAccountDenial</option>
+                    <option>UserProfileChange</option>
                 </select>
             </div>
 
-            <div class="col-md-3">
-                <label class="form-label">User ID</label>
-                <input class="form-control" asp-for="UserId" />
-            </div>
-
-            <div class="col-md-3">
-                <label class="form-label">Target User ID</label>
-                <input class="form-control" asp-for="TargetUserId" />
-            </div>
-
-            <div class="col-md-3">
-                <label class="form-label">Page</label>
-                <input class="form-control" asp-for="PageFilter" />
+            <div class="col-md-6">
+                <label class="form-label">Search (Message, User ID, Page, Additional Data)</label>
+                <input class="form-control" asp-for="SearchTerm" placeholder="Enter search term..." />
             </div>
 
             <div class="col-md-3">
@@ -120,10 +113,10 @@
         <colgroup>
             <col style="width: 20%;" />  @* Timestamp *@
             <col style="width: 9%;" />   @* Level *@
-            <col style="width: 11%;" />  @* Event Type *@
+            <col style="width: 15%;" />  @* Event Type *@
             <col style="width: 10%;" />  @* User *@
             <col style="width: 10%;" />  @* Target User *@
-            <col style="width: 32%;" />  @* Message *@
+            <col style="width: 28%;" />  @* Message *@
             <col style="width: 8%;" />   @* Button *@
         </colgroup>
         <thead>
@@ -150,32 +143,76 @@
                         </span>
                     </td>
 
-                    <td>@log.EventType</td>
-                    <td class="text-truncate">@log.UserId</td>
-                    <td class="text-truncate">@log.TargetUserId</td>
-                    <td class="text-truncate">@log.Message</td>
+                    <td>
+                        <span class="badge bg-secondary">@log.EventType</span>
+                    </td>
+
+                    <td style="font-size: 0.85em; word-break: break-all;">
+                        @if (!string.IsNullOrEmpty(log.UserId))
+                        {
+                            <span title="@log.UserId">@log.UserId.Substring(0, Math.Min(8, log.UserId.Length))...</span>
+                        }
+                        else
+                        {
+                            <span class="text-muted">—</span>
+                        }
+                    </td>
+
+                    <td style="font-size: 0.85em; word-break: break-all;">
+                        @if (!string.IsNullOrEmpty(log.TargetUserId))
+                        {
+                            <span title="@log.TargetUserId">@log.TargetUserId.Substring(0, Math.Min(8, log.TargetUserId.Length))...</span>
+                        }
+                        else
+                        {
+                            <span class="text-muted">—</span>
+                        }
+                    </td>
+
+                    <td style="word-wrap: break-word;">
+                        @log.Message
+                    </td>
 
                     <td>
-                        <button class="btn btn-sm btn-outline-info"
+                        <button class="btn btn-sm btn-outline-primary"
                                 type="button"
-                                onclick="toggleDetails('details-@log.LogId', this)">
+                                data-bs-toggle="collapse"
+                                data-bs-target="#details-@log.LogId">
                             Details
                         </button>
                     </td>
                 </tr>
-
-                <tr id="details-@log.LogId" class="details-row" style="display: none;">
+                <tr class="details-row collapse" id="details-@log.LogId">
                     <td colspan="7">
                         <div class="details-content">
-                            <strong>Page:</strong> @log.Page <br />
-
-                            <strong>Additional Data:</strong>
-                            <pre>@log.AdditionalData</pre>
-
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <strong>Full User ID:</strong>
+                                    <pre>@(log.UserId ?? "(none)")</pre>
+                                </div>
+                                <div class="col-md-6">
+                                    <strong>Full Target User ID:</strong>
+                                    <pre>@(log.TargetUserId ?? "(none)")</pre>
+                                </div>
+                            </div>
+                            <div class="row mt-2">
+                                <div class="col-md-6">
+                                    <strong>Page:</strong>
+                                    <pre>@(log.Page ?? "(none)")</pre>
+                                </div>
+                                <div class="col-md-6">
+                                    <strong>Additional Data:</strong>
+                                    <pre>@(log.AdditionalData ?? "(none)")</pre>
+                                </div>
+                            </div>
                             @if (!string.IsNullOrEmpty(log.StackTrace))
                             {
-                                <strong>Stack Trace:</strong>
-                                <pre>@log.StackTrace</pre>
+                                <div class="row mt-2">
+                                    <div class="col-12">
+                                        <strong>Stack Trace:</strong>
+                                        <pre>@log.StackTrace</pre>
+                                    </div>
+                                </div>
                             }
                         </div>
                     </td>
@@ -187,50 +224,30 @@
 
 @if (Model.TotalPages > 1)
 {
-    <nav aria-label="Log pagination">
+    <nav>
         <ul class="pagination justify-content-center">
-            <!-- Previous -->
-            <li class="page-item @(Model.CurrentPage <= 1 ? "disabled" : "")">
-                <a class="page-link"
-                   asp-page="/Admin/SystemLogs/Index"
-                   asp-route-currentPage="@(Model.CurrentPage - 1)"
-                   asp-route-level="@Model.Level"
-                   asp-route-eventType="@Model.EventType"
-                   asp-route-userId="@Model.UserId"
-                   asp-route-targetUserId="@Model.TargetUserId"
-                   asp-route-pageFilter="@Model.PageFilter"
-                   asp-route-startDate="@Model.StartDate?.ToString("yyyy-MM-dd")"
-                   asp-route-endDate="@Model.EndDate?.ToString("yyyy-MM-dd")">
-                    &laquo; Previous
-                </a>
-            </li>
-
-            @{
-                int startPage = Math.Max(1, Model.CurrentPage - 2);
-                int endPage = Math.Min(Model.TotalPages, Model.CurrentPage + 2);
-            }
-
-            @if (startPage > 1)
+            @if (Model.CurrentPage > 1)
             {
                 <li class="page-item">
-                    <a class="page-link"
+                    <a class="page-link" 
                        asp-page="/Admin/SystemLogs/Index"
-                       asp-route-currentPage="1"
+                       asp-route-currentPage="@(Model.CurrentPage - 1)"
                        asp-route-level="@Model.Level"
                        asp-route-eventType="@Model.EventType"
-                       asp-route-userId="@Model.UserId"
-                       asp-route-targetUserId="@Model.TargetUserId"
-                       asp-route-pageFilter="@Model.PageFilter"
-                       asp-route-startDate="@Model.StartDate?.ToString("yyyy-MM-dd")"
-                       asp-route-endDate="@Model.EndDate?.ToString("yyyy-MM-dd")">1</a>
+                       asp-route-searchTerm="@Model.SearchTerm"
+                       asp-route-startDate="@Model.StartDate"
+                       asp-route-endDate="@Model.EndDate">
+                        Previous
+                    </a>
                 </li>
-                @if (startPage > 2)
-                {
-                    <li class="page-item disabled"><span class="page-link">&hellip;</span></li>
-                }
             }
 
-            @for (int i = startPage; i <= endPage; i++)
+            @{
+                var startPage = Math.Max(1, Model.CurrentPage - 2);
+                var endPage = Math.Min(Model.TotalPages, Model.CurrentPage + 2);
+            }
+
+            @for (var i = startPage; i <= endPage; i++)
             {
                 <li class="page-item @(i == Model.CurrentPage ? "active" : "")">
                     <a class="page-link"
@@ -238,70 +255,39 @@
                        asp-route-currentPage="@i"
                        asp-route-level="@Model.Level"
                        asp-route-eventType="@Model.EventType"
-                       asp-route-userId="@Model.UserId"
-                       asp-route-targetUserId="@Model.TargetUserId"
-                       asp-route-pageFilter="@Model.PageFilter"
-                       asp-route-startDate="@Model.StartDate?.ToString("yyyy-MM-dd")"
-                       asp-route-endDate="@Model.EndDate?.ToString("yyyy-MM-dd")">@i</a>
+                       asp-route-searchTerm="@Model.SearchTerm"
+                       asp-route-startDate="@Model.StartDate"
+                       asp-route-endDate="@Model.EndDate">
+                        @i
+                    </a>
                 </li>
             }
 
-            @if (endPage < Model.TotalPages)
+            @if (Model.CurrentPage < Model.TotalPages)
             {
-                @if (endPage < Model.TotalPages - 1)
-                {
-                    <li class="page-item disabled"><span class="page-link">&hellip;</span></li>
-                }
                 <li class="page-item">
                     <a class="page-link"
                        asp-page="/Admin/SystemLogs/Index"
-                       asp-route-currentPage="@Model.TotalPages"
+                       asp-route-currentPage="@(Model.CurrentPage + 1)"
                        asp-route-level="@Model.Level"
                        asp-route-eventType="@Model.EventType"
-                       asp-route-userId="@Model.UserId"
-                       asp-route-targetUserId="@Model.TargetUserId"
-                       asp-route-pageFilter="@Model.PageFilter"
-                       asp-route-startDate="@Model.StartDate?.ToString("yyyy-MM-dd")"
-                       asp-route-endDate="@Model.EndDate?.ToString("yyyy-MM-dd")">@Model.TotalPages</a>
+                       asp-route-searchTerm="@Model.SearchTerm"
+                       asp-route-startDate="@Model.StartDate"
+                       asp-route-endDate="@Model.EndDate">
+                        Next
+                    </a>
                 </li>
             }
-
-            <!-- Next -->
-            <li class="page-item @(Model.CurrentPage >= Model.TotalPages ? "disabled" : "")">
-                <a class="page-link"
-                   asp-page="/Admin/SystemLogs/Index"
-                   asp-route-currentPage="@(Model.CurrentPage + 1)"
-                   asp-route-level="@Model.Level"
-                   asp-route-eventType="@Model.EventType"
-                   asp-route-userId="@Model.UserId"
-                   asp-route-targetUserId="@Model.TargetUserId"
-                   asp-route-pageFilter="@Model.PageFilter"
-                   asp-route-startDate="@Model.StartDate?.ToString("yyyy-MM-dd")"
-                   asp-route-endDate="@Model.EndDate?.ToString("yyyy-MM-dd")">
-                    Next &raquo;
-                </a>
-            </li>
         </ul>
     </nav>
 }
-
-<script>
-    function toggleDetails(id, btn) {
-        var row = document.getElementById(id);
-        if (row) {
-            var isHidden = row.style.display === 'none';
-            row.style.display = isHidden ? '' : 'none';
-            btn.textContent = isHidden ? 'Hide' : 'Details';
-        }
-    }
-</script>
 
 @functions {
     string GetBadgeColor(string level)
     {
         return level switch
         {
-            "Information" => "primary",
+            "Information" => "info",
             "Warning" => "warning",
             "Error" => "danger",
             "Critical" => "dark",

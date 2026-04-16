@@ -28,16 +28,38 @@ namespace CS392_WebApplication.Models
         [Column("purchase_type")]
         public PurchaseType purchase_type { get; set; }
 
-        // NEW — teacher-defined metadata for published lists
-        [Column("is_required")]
-        public bool is_required { get; set; } = true;
+        // -----------------------------
+        // NEW — Student Item Completion
+        // -----------------------------
+
+        [Column("is_purchased")]
+        public bool is_purchased { get; set; } = false;
+
+        // -----------------------------
+        // NEW — Teacher Requirement Level
+        // -----------------------------
+
+        public enum RequirementLevel
+        {
+            Required = 0,
+            Recommended = 1,
+            Optional = 2
+        }
+
+        [Column("requirement_level")]
+        public RequirementLevel requirement_level { get; set; } = RequirementLevel.Required;
+
+        // -----------------------------
+        // Existing Teacher Metadata
+        // -----------------------------
 
         [Column("teacher_note")]
         [MaxLength(300)]
         public string? teacher_note { get; set; }
 
-        // NEW — recommended quantity for students
         [Column("recommended_quantity")]
         public int? recommended_quantity { get; set; }
+
+        
     }
 }
