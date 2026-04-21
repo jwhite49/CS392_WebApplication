@@ -119,6 +119,56 @@ table, th, td {
         box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15);
         cursor: pointer;
     }
+/* Fix for catalog dropdown appearing behind cards on hover */
+.product-card:hover {
+    z-index: auto !important;
+}
+
+/* Remove any transform that creates stacking context */
+.product-card {
+    overflow: visible !important;
+    transform: none !important;
+}
+
+/* When dropdown is open, force the parent column to highest z-index */
+.col-md-4:has(.dropdown.show) {
+    z-index: 1070 !important;
+    position: relative;
+}
+
+/* Also force z-index when dropdown button is focused/active */
+.col-md-4:has(.dropdown button:focus),
+.col-md-4:has(.dropdown button[aria-expanded="true"]) {
+    z-index: 1070 !important;
+    position: relative;
+}
+
+/* Ensure dropdown menu appears on top of everything */
+.dropdown.show .dropdown-menu {
+    z-index: 1071 !important;
+    position: absolute !important;
+}
+
+/* Prevent any card hover effects from interfering */
+.product-card:has(.dropdown.show) {
+    z-index: 1069 !important;
+    position: relative !important;
+}
+
+/* Make sure row doesn't create stacking context */
+.row {
+    position: relative;
+    z-index: auto;
+}
+
+/* Override any Bootstrap card hover transforms */
+.card:hover {
+    transform: none !important;
+}
+
+.card.shadow-sm:hover {
+    transform: none !important;
+}
 /* Home Page Action Buttons */
 .home-action-btn {
     background-color: var(--schoolyellow);

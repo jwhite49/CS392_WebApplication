@@ -1,10 +1,20 @@
 ﻿@page "{listId:int}"
 @model CS392_WebApplication.Pages.Lists.ListDetailsModel
 @{
-    ViewData["Title"] = Model.UserList.title ?? "List Details";
+    ViewData["Title"] = Model.UserList?.title ?? "List Details";
 }
 
 <div class="container mt-4">
+    @if (Model.UserList == null)
+    {
+        <div class="alert alert-danger">
+            <h4>Error</h4>
+            <p>List not found or you don't have permission to view it.</p>
+            <a asp-page="/Lists/List" class="btn btn-primary">Back to My Lists</a>
+        </div>
+        return;
+    }
+
     <!-- Header -->
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
@@ -322,7 +332,7 @@
                 </h5>
                 @if (Model.CanModifyList)
                 {
-                    <a asp-page="/ProductPages/Catalog/Index" class="btn btn-sm btn-primary">
+                    <a asp-page="/ProductPages/Catalog/Index" asp-route-ContextListId="@Model.UserList.listID" class="btn btn-sm btn-primary">
                         <i class="bi bi-plus-circle me-1"></i>Add Items
                     </a>
                 }
@@ -337,7 +347,7 @@
                     @if (Model.CanModifyList)
                     {
                         <p class="text-muted">Start adding products to your list</p>
-                        <a asp-page="/ProductPages/Catalog/Index" class="btn btn-primary mt-2">
+                        <a asp-page="/ProductPages/Catalog/Index" asp-route-ContextListId="@Model.UserList.listID" class="btn btn-primary mt-2">
                             <i class="bi bi-search me-2"></i>Browse Products
                         </a>
                     }
@@ -351,13 +361,10 @@
                             <tr>
                                 <th style="width: 50px;"></th>
                                 <th>Product</th>
-                                <th class="text-center" style="width: 100px;">Quantity</th>
+                                <th class="text-center" style="width: 150px;">Quantity</th>
                                 <th class="text-end" style="width: 120px;">Price</th>
                                 <th class="text-end" style="width: 120px;">Subtotal</th>
-                                @if (Model.CanModifyList)
-                                {
-                                    <th class="text-center" style="width: 100px;">Actions</th>
-                                }
+                                <th class="text-center" style="width: 200px;">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -389,7 +396,26 @@
                                             </div>
                                         </td>
                                         <td class="text-center">
-                                            <span class="badge bg-secondary">@item.quantity</span>
+                                            @if (Model.CanModifyList)
+                                            {
+                                                <!-- Editable Quantity -->
+                                                <form method="post" asp-page-handler="UpdateQuantity" asp-route-listId="@Model.UserList.listID" asp-route-itemId="@item.list_items_ID" class="d-inline-flex align-items-center gap-1">
+                                                    <button type="submit" name="action" value="decrease" class="btn btn-sm btn-outline-secondary" @(item.quantity <= 1 ? "disabled" : "")>
+                                                        <i class="bi bi-dash"></i>
+                                                    </button>
+                                                    <input type="number" name="quantity" value="@item.quantity" min="1" max="999" 
+                                                           class="form-control form-control-sm text-center" style="width: 60px;" 
+                                                           onchange="this.form.submit()">
+                                                    <button type="submit" name="action" value="increase" class="btn btn-sm btn-outline-secondary">
+                                                        <i class="bi bi-plus"></i>
+                                                    </button>
+                                                </form>
+                                            }
+                                            else
+                                            {
+                                                <!-- Read-only Quantity for imported lists -->
+                                                <span class="badge bg-secondary">@item.quantity</span>
+                                            }
                                         </td>
                                         <td class="text-end">
                                             $@product.retail_price.ToString("N2")
@@ -397,29 +423,34 @@
                                         <td class="text-end fw-bold">
                                             $@subtotal.ToString("N2")
                                         </td>
-                                        @if (Model.CanModifyList)
-                                        {
-                                            <td class="text-center">
-                                                <form method="post" asp-page-handler="RemoveItem" asp-route-listId="@Model.UserList.listID" asp-route-itemId="@item.list_items_ID"
-                                                      onsubmit="return confirm('Remove this item from your list?');" class="d-inline">
-                                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Remove from list">
-                                                        <i class="bi bi-trash"></i>
-                                                    </button>
-                                                </form>
-                                            </td>
-                                        }
+                                        <td class="text-center">
+                                            <div class="d-flex gap-1 justify-content-center flex-wrap">
+                                                <!-- View Product Details Button -->
+                                                <a href="/ProductPages/Listing/@product.product_ID" class="btn btn-sm btn-outline-primary" title="View product details">
+                                                    <i class="bi bi-eye me-1"></i>View
+                                                </a>
+                                                
+                                                @if (Model.CanModifyList)
+                                                {
+                                                    <!-- Remove Item Button -->
+                                                    <form method="post" asp-page-handler="RemoveItem" asp-route-listId="@Model.UserList.listID" asp-route-itemId="@item.list_items_ID"
+                                                          onsubmit="return confirm('Remove this item from your list?');" class="d-inline">
+                                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Remove from list">
+                                                            <i class="bi bi-trash me-1"></i>Delete
+                                                        </button>
+                                                    </form>
+                                                }
+                                            </div>
+                                        </td>
                                     </tr>
                             }
-                        }
+                        
                         </tbody>
                         <tfoot>
                             <tr class="table-light fw-bold">
-                                <td colspan="@(Model.CanModifyList ? 4 : 4)" class="text-end">Total:</td>
+                                <td colspan="4" class="text-end">Total:</td>
                                 <td class="text-end fs-5">$@Model.UserList.total_price.ToString("N2")</td>
-                                @if (Model.CanModifyList)
-                                {
-                                    <td></td>
-                                }
+                                <td></td>
                             </tr>
                         </tfoot>
                     </table>
@@ -480,57 +511,64 @@
     {
         <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
         <script>
-            const ctx = document.getElementById('budgetChart');
-            
-            const budgetRemaining = @(Model.UserList.BudgetRemaining ?? 0);
-            const isOverBudget = budgetRemaining < 0;
-            
-            const chartData = {
-                labels: isOverBudget 
-                    ? ['Already Purchased', 'Remaining to Buy', 'Over Budget']
-                    : ['Already Purchased', 'Remaining to Buy', 'Budget Remaining'],
-                datasets: [{
-                    data: isOverBudget
-                        ? [@Model.TotalSpent, @Model.RemainingToBuy, @Math.Abs(Model.UserList.BudgetRemaining ?? 0)]
-                        : [@Model.TotalSpent, @Model.RemainingToBuy, @(Model.UserList.BudgetRemaining ?? 0)],
-                    backgroundColor: isOverBudget
-                        ? ['#28a745', '#007bff', '#dc3545']
-                        : ['#28a745', '#007bff', '#e9ecef'],
-                    borderWidth: 2,
-                    borderColor: '#fff'
-                }]
-            };
+            document.addEventListener('DOMContentLoaded', function() {
+                const ctx = document.getElementById('budgetChart');
+                
+                if (!ctx) {
+                    console.error('Budget chart canvas not found');
+                    return;
+                }
+                
+                const budgetRemaining = @(Model.UserList.BudgetRemaining ?? 0);
+                const isOverBudget = budgetRemaining < 0;
+                
+                const chartData = {
+                    labels: isOverBudget 
+                        ? ['Already Purchased', 'Remaining to Buy', 'Over Budget']
+                        : ['Already Purchased', 'Remaining to Buy', 'Budget Remaining'],
+                    datasets: [{
+                        data: isOverBudget
+                            ? [@Model.TotalSpent, @Model.RemainingToBuy, @Math.Abs(Model.UserList.BudgetRemaining ?? 0)]
+                            : [@Model.TotalSpent, @Model.RemainingToBuy, @(Model.UserList.BudgetRemaining ?? 0)],
+                        backgroundColor: isOverBudget
+                            ? ['#28a745', '#007bff', '#dc3545']
+                            : ['#28a745', '#007bff', '#e9ecef'],
+                        borderWidth: 2,
+                        borderColor: '#fff'
+                    }]
+                };
 
-            new Chart(ctx, {
-                type: 'doughnut',
-                data: chartData,
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: true,
-                    plugins: {
-                        legend: {
-                            position: 'bottom',
-                            labels: {
-                                padding: 15,
-                                font: {
-                                    size: 12
-                                }
-                            }
-                        },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    let label = context.label || '';
-                                    if (label) {
-                                        label += ': ';
+                new Chart(ctx, {
+                    type: 'doughnut',
+                    data: chartData,
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: {
+                                    padding: 15,
+                                    font: {
+                                        size: 12
                                     }
-                                    label += '$' + context.parsed.toFixed(2);
-                                    return label;
+                                }
+                            },
+                           tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        let label = context.label || '';
+                                        if (label) {
+                                            label += ': ';
+                                        }
+                                        label += '$' + context.parsed.toFixed(2);
+                                        return label;
+                                    }
                                 }
                             }
                         }
                     }
-                }
+                });
             });
         </script>
     }

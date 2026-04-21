@@ -232,6 +232,76 @@ namespace CS392_WebApplication.Pages.Lists
             return RedirectToPage(new { listId });
         }
 
+        public async Task<IActionResult> OnPostUpdateQuantityAsync(int listId, int itemId, int? quantity, string? action)
+        {
+            var identityUser = await _userManager.GetUserAsync(User);
+            if (identityUser == null) return RedirectToPage("/Account/Login", new { area = "Identity" });
+
+            var appUser = await _userContext.User
+                .FirstOrDefaultAsync(u => u.Email == identityUser.Email);
+            if (appUser == null) return RedirectToPage("/Error");
+
+            // Verify the list belongs to the user
+            var list = await _listContext.Product_list
+                .FirstOrDefaultAsync(l => l.listID == listId && l.userID == appUser.UserID);
+
+            if (list == null)
+            {
+                TempData["ErrorMessage"] = "List not found.";
+                return RedirectToPage("/Lists/List");
+            }
+
+            // Check if this is an imported list (can't edit quantity)
+            var importRecord = await _listContext.PublishedList_Student
+                .AsNoTracking()
+                .FirstOrDefaultAsync(ps => ps.student_listID == listId && ps.student_userID == appUser.UserID);
+
+            if (importRecord != null)
+            {
+                TempData["ErrorMessage"] = "Cannot edit quantity for imported lists.";
+                return RedirectToPage(new { listId = listId });
+            }
+
+            var item = await _productsContext.Product_list_items
+                .FirstOrDefaultAsync(i => i.list_items_ID == itemId && i.list_ID == listId);
+
+            if (item != null)
+            {
+                // Handle button actions (increase/decrease)
+                if (action == "increase")
+                {
+                    item.quantity += 1;
+                }
+                else if (action == "decrease" && item.quantity > 1)
+                {
+                    item.quantity -= 1;
+                }
+                else if (quantity.HasValue && string.IsNullOrEmpty(action))
+                {
+                    // Direct input - validate quantity
+                    if (quantity.Value >= 1 && quantity.Value <= 999)
+                    {
+                        item.quantity = quantity.Value;
+                    }
+                    else
+                    {
+                        TempData["ErrorMessage"] = "Quantity must be between 1 and 999.";
+                        return RedirectToPage(new { listId = listId });
+                    }
+                }
+
+                await _productsContext.SaveChangesAsync();
+
+                // Recalculate total price
+                await RecalculateTotalPrice(listId);
+
+                TempData["SuccessMessage"] = "Quantity updated!";
+            }
+
+            // IMPORTANT: Always redirect back to the SAME listId
+            return RedirectToPage(new { listId = listId });
+        }
+
         private async Task RecalculateTotalPrice(int listId)
         {
             var list = await _listContext.Product_list.FirstOrDefaultAsync(l => l.listID == listId);

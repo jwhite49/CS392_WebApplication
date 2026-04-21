@@ -2,10 +2,57 @@
 @model CS392_WebApplication.Pages.ProductPages.Catalog.IndexModel
 
 <h2 class="mb-4">Product Catalog</h2>
+
+@* Budget Banner - Shows when shopping for a specific list with budget *@
+@if (Model.ShowBudgetFeatures && Model.ContextList != null)
+{
+    var budgetPercent = Model.ContextList.BudgetUtilizationPercent ?? 0;
+    var statusClass = budgetPercent >= 100 ? "danger" : budgetPercent >= 90 ? "warning" : "success";
+    var statusIcon = budgetPercent >= 100 ? "exclamation-triangle" : budgetPercent >= 90 ? "exclamation-circle" : "piggy-bank";
+    
+    <div class="alert alert-@statusClass border-@statusClass mb-4">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h5 class="alert-heading mb-2">
+                    <i class="bi bi-@statusIcon me-2"></i>
+                    Shopping for: @Model.ContextList.title
+                </h5>
+                <div class="d-flex gap-4 flex-wrap">
+                    <div>
+                        <strong>Budget:</strong> $@Model.ContextList.budget_amount!.Value.ToString("N2")
+                    </div>
+                    <div>
+                        <strong>Current Total:</strong> $@Model.ContextList.total_price.ToString("N2")
+                    </div>
+                    <div>
+                        <strong>Remaining:</strong> 
+                        @if (Model.BudgetRemaining >= 0)
+                        {
+                            <span class="text-success">$@Model.BudgetRemaining.ToString("N2")</span>
+                        }
+                        else
+                        {
+                            <span class="text-danger">-$@Math.Abs(Model.BudgetRemaining).ToString("N2") (Over Budget)</span>
+                        }
+                    </div>
+                </div>
+            </div>
+            <a asp-page="/Lists/ListDetails" asp-route-listId="@Model.ContextList.listID" class="btn btn-outline-@statusClass">
+                <i class="bi bi-eye me-1"></i>View List
+            </a>
+        </div>
+    </div>
+}
+
 <div class="card mb-4">
     <div class="card-body">
         <form method="get" class="mb-3 d-flex flex-wrap gap-3 align-items-center">
-    <!--Possibly add "category" from index page to search from quick search buttons on homepage-->
+            @* Hidden field to preserve context list *@
+            @if (Model.ContextListId.HasValue)
+            {
+                <input type="hidden" name="ContextListId" value="@Model.ContextListId" />
+            }
+
             <!-- Search input -->
             <input type="text"
                    name="Search"
@@ -19,11 +66,23 @@
                 Search
             </button>
 
-            <!-- Clear ONLY search (keeps Sort, resets to page 1) -->
-            <a href="?Sort=@Model.Sort&pageNumber=1"
-               class="btn btn-outline-secondary">
-                Clear Search
-            </a>
+            <!-- Budget Filter Toggle (only show if budget features active) -->
+            @if (Model.ShowBudgetFeatures && Model.BudgetRemaining > 0)
+            {
+                <div class="form-check">
+                    <input class="form-check-input" 
+                           type="checkbox" 
+                           name="FilterByBudget" 
+                           id="filterByBudget"
+                           value="true"
+                           checked="@Model.FilterByBudget"
+                           onchange="this.form.submit()" />
+                    <label class="form-check-label" for="filterByBudget">
+                        <i class="bi bi-funnel me-1"></i>
+                        <strong>Only show items within budget</strong>
+                    </label>
+                </div>
+            }
 
             <!-- Sort dropdown -->
             <select name="Sort"
@@ -37,8 +96,14 @@
                 <option value="price_desc" selected="@(Model.Sort == "price_desc")">Price (High → Low)</option>
             </select>
 
-            <!-- Reset ONLY sort (keeps Search, resets to page 1) -->
-            <a href="?Search=@Model.Search&pageNumber=1"
+            <!-- Clear Search -->
+            <a href="?Sort=@Model.Sort&ContextListId=@Model.ContextListId&pageNumber=1"
+               class="btn btn-outline-secondary">
+                Clear Search
+            </a>
+
+            <!-- Reset Sort -->
+            <a href="?Search=@Model.Search&ContextListId=@Model.ContextListId&pageNumber=1"
                class="btn btn-outline-secondary">
                 Reset Sort
             </a>
@@ -46,6 +111,7 @@
         </form>
     </div>
 </div>
+
 @{
     string sortLabel =
         Model.Sort == "name_asc" ? "Name (A → Z)" :
@@ -54,6 +120,7 @@
         Model.Sort == "price_desc" ? "Price (High → Low)" :
         "Default";
 }
+
 @* "Showing X–Y of Z results" *@
 @{
     int startItem = 0;
@@ -66,7 +133,7 @@
     }
 }
 
-@if (Model.TotalItems > 0 && (!string.IsNullOrWhiteSpace(Model.Search) || !string.IsNullOrWhiteSpace(Model.Sort)))
+@if (Model.TotalItems > 0 && (!string.IsNullOrWhiteSpace(Model.Search) || !string.IsNullOrWhiteSpace(Model.Sort) || Model.FilterByBudget))
 {
     <p class="text-muted mb-1">
         Showing @startItem–@endItem of @Model.TotalItems results
@@ -74,10 +141,14 @@
         {
             <span> for "<strong>@Model.Search</strong>"</span>
         }
+        @if (Model.FilterByBudget)
+        {
+            <span> <span class="badge bg-success">Within Budget</span></span>
+        }
         @if (!string.IsNullOrWhiteSpace(Model.Sort))
         {
             <span>
-                @if (!string.IsNullOrWhiteSpace(Model.Search))
+                @if (!string.IsNullOrWhiteSpace(Model.Search) || Model.FilterByBudget)
                 {
                     @: ,&nbsp;
                 }
@@ -86,7 +157,6 @@
         }
     </p>
 }
-
 else if (Model.TotalItems > 0)
 {
     <p class="text-muted mb-1">
@@ -98,6 +168,14 @@ else if (Model.TotalItems > 0)
 {
     <div class="alert alert-success alert-dismissible fade show" role="alert">
         @TempData["SuccessMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+@if (TempData["WarningMessage"] != null)
+{
+    <div class="alert alert-warning alert-dismissible fade show" role="alert">
+        <i class="bi bi-exclamation-triangle me-2"></i>
+        @TempData["WarningMessage"]
         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
     </div>
 }
@@ -125,9 +203,30 @@ else
     <div class="row">
         @foreach (var item in Model.Products)
         {
-            <div class="col-md-4 mb-4">
-                <div class="card h-100 shadow-sm product-card" onclick="window.location='/ProductPages/Listing/@item.product_ID'">
-                    <div class="card-body">
+            // Budget indicator logic
+            bool isWithinBudget = !Model.ShowBudgetFeatures || Model.BudgetRemaining >= item.retail_price;
+            bool isOverBudget = Model.ShowBudgetFeatures && Model.BudgetRemaining < item.retail_price;
+            string budgetBadgeClass = isWithinBudget ? "bg-success" : "bg-danger";
+            string budgetBadgeText = isWithinBudget ? "Within Budget" : "Over Budget";
+            
+            <div class="col-md-4 mb-4" style="z-index: auto;">
+                <div class="card h-100 shadow-sm product-card position-relative" onclick="window.location='/ProductPages/Listing/@item.product_ID'" style="overflow: visible;">
+                    @* Budget Badge *@
+                    @if (Model.ShowBudgetFeatures)
+                    {
+                        <span class="position-absolute top-0 end-0 m-2 badge @budgetBadgeClass" style="z-index: 1;">
+                            @if (isWithinBudget)
+                            {
+                                <i class="bi bi-check-circle me-1"></i>
+                            }
+                            else
+                            {
+                                <i class="bi bi-exclamation-triangle me-1"></i>
+                            }
+                        </span>
+                    }
+                    
+                    <div class="card-body d-flex flex-column">
                         <h5 class="card-title">@item.product_name</h5>
                         @if (!string.IsNullOrEmpty(item.ImageURL))
                         {
@@ -179,28 +278,63 @@ else
                             </span>
                         </p>
 
-                        <div class="d-flex flex-wrap gap-2 mt-3" onclick="event.stopPropagation();">
-                            <a href="/ProductPages/Listing/@item.product_ID" class="btn btn-primary">
-                                View Details
-                            </a>
+                        <!-- Push buttons to bottom with margin-top auto -->
+                        <div class="mt-auto pt-3" onclick="event.stopPropagation();">
+                            <!-- First row: View Details and View Source buttons -->
+                            <div class="d-grid gap-2 mb-2">
+                                <div class="row g-2">
+                                    <div class="col-6">
+                                        <a href="/ProductPages/Listing/@item.product_ID" class="btn btn-primary w-100">
+                                            View Details
+                                        </a>
+                                    </div>
+                                    <div class="col-6">
+                                        <a href="@item.retail_URL" class="btn btn-success w-100" target="_blank" title="@item.source_name">
+                                            @{
+                                                var sourceName = item.source_name ?? "Site";
+                                                var displayName = sourceName.Length > 10 ? sourceName.Substring(0, 10) + "…" : sourceName;
+                                            }
+                                            View @displayName
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
 
-                            <a href="@item.retail_URL" class="btn btn-success" target="_blank">
-                                View @(item.source_name?.Length > 8 ? item.source_name.Substring(0, 8) + "…" : item.source_name)
-                            </a>
-
+                            <!-- Second row: Add to List button (full width) -->
                             @if (User.Identity?.IsAuthenticated == true)
                             {
                                 @if (addableLists.Any())
                                 {
-                                    <div class="dropdown">
-                                        <button class="btn btn-warning dropdown-toggle"
+                                    <div class="dropdown d-grid" style="position: static;">
+                                        <button class="btn btn-warning dropdown-toggle w-100"
                                                 type="button"
                                                 data-bs-toggle="dropdown"
-                                                aria-expanded="false">
+                                                aria-expanded="false"
+                                                style="position: relative; z-index: 1;">
                                             Add to List
                                         </button>
-                                        <ul class="dropdown-menu">
-                                            @foreach (var list in addableLists)
+                                        <ul class="dropdown-menu w-100" style="position: absolute; z-index: 1060 !important;">
+                                            @* Context list gets priority if present *@
+                                            @if (Model.ContextListId.HasValue && addableLists.Any(l => l.listID == Model.ContextListId.Value))
+                                            {
+                                                var contextList = addableLists.First(l => l.listID == Model.ContextListId.Value);
+                                                <li>
+                                                    <form method="post" asp-page-handler="AddToList">
+                                                        <input type="hidden" name="productId" value="@item.product_ID" />
+                                                        <input type="hidden" name="listId" value="@contextList.listID" />
+                                                        <button type="submit" class="dropdown-item fw-bold">
+                                                            <i class="bi bi-star-fill text-warning me-2"></i>
+                                                            @(contextList.title ?? "Untitled List")
+                                                        </button>
+                                                    </form>
+                                                </li>
+                                                @if (addableLists.Count > 1)
+                                                {
+                                                    <li><hr class="dropdown-divider" /></li>
+                                                }
+                                            }
+                                            
+                                            @foreach (var list in addableLists.Where(l => l.listID != Model.ContextListId))
                                             {
                                                 <li>
                                                     <form method="post" asp-page-handler="AddToList">
@@ -223,14 +357,14 @@ else
                                 }
                                 else
                                 {
-                                    <a href="/Lists/CreateList" class="btn btn-warning">
+                                    <a href="/Lists/CreateList" class="btn btn-warning w-100">
                                         Create a List First
                                     </a>
                                 }
                             }
                             else
                             {
-                                <a href="/Identity/Account/Login" class="btn btn-warning">
+                                <a href="/Identity/Account/Login" class="btn btn-warning w-100">
                                     Log in to Add
                                 </a>
                             }
@@ -240,7 +374,6 @@ else
             </div>
         }
     </div>
-
 }
 
 @if (Model.TotalPages > 1)
@@ -259,7 +392,7 @@ else
         <!-- Previous Page -->
         <li class="page-item @(Model.PageNumber <= 1 ? "disabled" : "")">
             <a class="page-link"
-               href="?Search=@Model.Search&Sort=@Model.Sort&pageNumber=@(Model.PageNumber - 1)">
+               href="?Search=@Model.Search&Sort=@Model.Sort&ContextListId=@Model.ContextListId&FilterByBudget=@Model.FilterByBudget&pageNumber=@(Model.PageNumber - 1)">
                 &laquo;
             </a>
         </li>
@@ -269,7 +402,7 @@ else
         {
             <li class="page-item">
                 <a class="page-link text-secondary"
-                   href="?Search=@Model.Search&Sort=@Model.Sort&pageNumber=@prevWindowStart"
+                   href="?Search=@Model.Search&Sort=@Model.Sort&ContextListId=@Model.ContextListId&FilterByBudget=@Model.FilterByBudget&pageNumber=@prevWindowStart"
                    title="Pages @prevWindowStart–@(pageWindowStart - 1)">
                     &hellip;
                 </a>
@@ -281,7 +414,7 @@ else
         {
             <li class="page-item @(i == Model.PageNumber ? "active" : "")">
                 <a class="page-link"
-                   href="?Search=@Model.Search&Sort=@Model.Sort&pageNumber=@i">
+                   href="?Search=@Model.Search&Sort=@Model.Sort&ContextListId=@Model.ContextListId&FilterByBudget=@Model.FilterByBudget&pageNumber=@i">
                     @i
                 </a>
             </li>
@@ -292,7 +425,7 @@ else
         {
             <li class="page-item">
                 <a class="page-link text-secondary"
-                   href="?Search=@Model.Search&Sort=@Model.Sort&pageNumber=@nextWindowStart"
+                   href="?Search=@Model.Search&Sort=@Model.Sort&ContextListId=@Model.ContextListId&FilterByBudget=@Model.FilterByBudget&pageNumber=@nextWindowStart"
                    title="Pages @nextWindowStart–@(Math.Min(nextWindowStart + windowSize - 1, Model.TotalPages))">
                     &hellip;
                 </a>
@@ -302,7 +435,7 @@ else
         <!-- Next Page -->
         <li class="page-item @(Model.PageNumber >= Model.TotalPages ? "disabled" : "")">
             <a class="page-link"
-               href="?Search=@Model.Search&Sort=@Model.Sort&pageNumber=@(Model.PageNumber + 1)">
+               href="?Search=@Model.Search&Sort=@Model.Sort&ContextListId=@Model.ContextListId&FilterByBudget=@Model.FilterByBudget&pageNumber=@(Model.PageNumber + 1)">
                 &raquo;
             </a>
         </li>
@@ -310,3 +443,33 @@ else
     </ul>
     </nav>
 }
+
+@section Scripts {
+    <script>
+        // Fix dropdown z-index when opened
+        document.addEventListener('DOMContentLoaded', function() {
+            const dropdowns = document.querySelectorAll('.dropdown-toggle');
+            
+            dropdowns.forEach(dropdown => {
+                dropdown.addEventListener('shown.bs.dropdown', function() {
+                    // Find the parent column and set z-index
+                    const parentCol = this.closest('.col-md-4');
+                    if (parentCol) {
+                        parentCol.style.zIndex = '1070';
+                        parentCol.style.position = 'relative';
+                    }
+                });
+                
+                dropdown.addEventListener('hidden.bs.dropdown', function() {
+                    // Reset z-index when dropdown closes
+                    const parentCol = this.closest('.col-md-4');
+                    if (parentCol) {
+                        parentCol.style.zIndex = '';
+                        parentCol.style.position = '';
+                    }
+                });
+            });
+        });
+    </script>
+}
+
