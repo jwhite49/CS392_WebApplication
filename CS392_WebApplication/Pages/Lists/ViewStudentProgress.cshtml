@@ -1,0 +1,125 @@
+﻿@page "{studentListId:int}"
+@model CS392_WebApplication.Pages.Lists.ViewStudentProgressModel
+@{
+    ViewData["Title"] = "Student Progress";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Student Progress: @Model.StudentName</h2>
+    <a class="btn btn-outline-secondary" asp-page="/Lists/ManageList" asp-route-listId="@Model.PublishedListId">
+        &larr; Back to Manage List
+    </a>
+</div>
+
+<!-- Progress Overview -->
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card shadow-sm">
+            <div class="card-body text-center">
+                <h5 class="card-title">Overall Progress</h5>
+                <div class="display-4 mb-2">@Model.ProgressPercent%</div>
+                <div class="progress" style="height: 20px;">
+                    <div class="progress-bar @(Model.ProgressPercent == 100 ? "bg-success" : "bg-primary")" 
+                         style="width: @Model.ProgressPercent%"></div>
+                </div>
+                <p class="text-muted mt-2 mb-0">
+                    @Model.CompletedItems / @Model.TotalItems items purchased
+                </p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card shadow-sm">
+            <div class="card-body text-center">
+                <h5 class="card-title">Student Info</h5>
+                <p class="mb-1"><strong>Name:</strong> @Model.StudentName</p>
+                <p class="mb-1"><strong>Email:</strong> @Model.StudentEmail</p>
+                <p class="mb-0"><strong>List Added:</strong> @Model.AddedDate.ToShortDateString()</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card shadow-sm">
+            <div class="card-body text-center">
+                <h5 class="card-title">List Info</h5>
+                <p class="mb-1"><strong>List:</strong> @Model.ListTitle</p>
+                <p class="mb-0"><strong>Estimated Total:</strong> $@Model.TotalPrice.ToString("0.00")</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Item-by-Item Breakdown -->
+<div class="card shadow-sm">
+    <div class="card-body">
+        <h5 class="card-title mb-3">Item Breakdown</h5>
+        
+        @if (Model.Items.Count == 0)
+        {
+            <p class="text-muted">No items in this list.</p>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th>Status</th>
+                            <th>Product</th>
+                            <th>Requirement</th>
+                            <th>Quantity</th>
+                            <th>Price</th>
+                            <th>Teacher Note</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model.Items)
+                        {
+                            <tr class="@(item.IsPurchased ? "table-success" : "")">
+                                <td class="text-center">
+                                    @if (item.IsPurchased)
+                                    {
+                                        <span class="badge bg-success">✓ Purchased</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-warning text-dark">Pending</span>
+                                    }
+                                </td>
+                                <td>
+                                    <strong>@item.ProductName</strong>
+                                </td>
+                                <td>
+                                    @switch (item.RequirementLevel)
+                                    {
+                                        case CS392_WebApplication.Models.Product_list_items.RequirementLevel.Required:
+                                            <span class="badge bg-danger">Required</span>
+                                            break;
+                                        case CS392_WebApplication.Models.Product_list_items.RequirementLevel.Recommended:
+                                            <span class="badge bg-warning text-dark">Recommended</span>
+                                            break;
+                                        case CS392_WebApplication.Models.Product_list_items.RequirementLevel.Optional:
+                                            <span class="badge bg-secondary">Optional</span>
+                                            break;
+                                    }
+                                </td>
+                                <td>@item.Quantity</td>
+                                <td>$@item.Price.ToString("0.00")</td>
+                                <td>
+                                    @if (!string.IsNullOrEmpty(item.TeacherNote))
+                                    {
+                                        <small class="text-muted">@item.TeacherNote</small>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">—</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>

@@ -30,12 +30,30 @@ public class LoggingSignInManager : SignInManager<IdentityUser>
         bool lockoutOnFailure)
     {
         var result = await base.PasswordSignInAsync(userName, password, isPersistent, lockoutOnFailure);
+        var user = await UserManager.FindByNameAsync(userName);
 
-        if (!result.Succeeded)
+        if (result.Succeeded)
         {
-            var user = await UserManager.FindByNameAsync(userName);
+            // Log successful login
+            var successLog = new SystemLog
+            {
+                Timestamp = DateTime.UtcNow,
+                Level = "Information",
+                EventType = "SuccessfulLogin",
+                Message = $"User '{userName}' successfully logged in",
+                UserId = user?.Id,
+                TargetUserId = user?.Id,
+                Page = "/Identity/Account/Login",
+                AdditionalData = $"{{ \"username\": \"{userName}\", \"isPersistent\": {isPersistent.ToString().ToLower()} }}"
+            };
 
-            var log = new SystemLog
+            _logContext.SystemLog.Add(successLog);
+            await _logContext.SaveChangesAsync();
+        }
+        else if (!result.Succeeded)
+        {
+            // Log failed login
+            var failLog = new SystemLog
             {
                 Timestamp = DateTime.UtcNow,
                 Level = "Warning",
@@ -44,10 +62,10 @@ public class LoggingSignInManager : SignInManager<IdentityUser>
                 UserId = user?.Id,
                 TargetUserId = user?.Id,
                 Page = "/Identity/Account/Login",
-                AdditionalData = $"{{ \"usernameAttempted\": \"{userName}\" }}"
+                AdditionalData = $"{{ \"usernameAttempted\": \"{userName}\", \"isLockedOut\": {result.IsLockedOut.ToString().ToLower()}, \"requiresTwoFactor\": {result.RequiresTwoFactor.ToString().ToLower()} }}"
             };
 
-            _logContext.SystemLog.Add(log);
+            _logContext.SystemLog.Add(failLog);
             await _logContext.SaveChangesAsync();
         }
 

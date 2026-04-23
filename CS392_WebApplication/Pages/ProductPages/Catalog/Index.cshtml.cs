@@ -39,6 +39,14 @@ namespace CS392_WebApplication.Pages.ProductPages.Catalog
         // Imported (read-only) list IDs so we can exclude them from the picker
         public HashSet<int> ImportedListIds { get; set; } = new();
 
+        // Budget-Aware Features
+        [BindProperty(SupportsGet = true)]
+        public int? ContextListId { get; set; }  // The list we're shopping for
+
+        public Product_list? ContextList { get; set; }  // Full list details for budget info
+        public double BudgetRemaining { get; set; }
+        public bool ShowBudgetFeatures { get; set; }
+
         // Sorting
         [BindProperty(SupportsGet = true)]
         public string? Sort { get; set; }
@@ -50,6 +58,10 @@ namespace CS392_WebApplication.Pages.ProductPages.Catalog
         // Category filter
         [BindProperty(SupportsGet = true)]
         public string? Category { get; set; }
+
+        // Budget filter
+        [BindProperty(SupportsGet = true)]
+        public bool FilterByBudget { get; set; }
 
         // Pagination
         [BindProperty(SupportsGet = true)]
@@ -63,7 +75,7 @@ namespace CS392_WebApplication.Pages.ProductPages.Catalog
         public int TotalPages => (int)Math.Ceiling((double)TotalItems / PageSize);
 
         // ---------------------------------------------------------
-        // ADD TO LIST HANDLER (now accepts listId)
+        // ADD TO LIST HANDLER (now budget-aware)
         // ---------------------------------------------------------
         public async Task<IActionResult> OnPostAddToListAsync(int productId, int listId)
         {
@@ -84,7 +96,7 @@ namespace CS392_WebApplication.Pages.ProductPages.Catalog
             if (list == null)
             {
                 TempData["ErrorMessage"] = "List not found.";
-                return RedirectToPage();
+                return RedirectToPage(new { ContextListId });
             }
 
             // Block adding to imported (read-only) lists
@@ -94,7 +106,7 @@ namespace CS392_WebApplication.Pages.ProductPages.Catalog
             if (isImported)
             {
                 TempData["ErrorMessage"] = "Cannot add items to an imported list.";
-                return RedirectToPage();
+                return RedirectToPage(new { ContextListId });
             }
 
             var product = await _productsContext.Products
@@ -102,6 +114,27 @@ namespace CS392_WebApplication.Pages.ProductPages.Catalog
 
             if (product == null)
                 return RedirectToPage("/Error");
+
+            // Check if item already exists in list
+            var existingItem = await _productsContext.Product_list_items
+                .FirstOrDefaultAsync(i => i.list_ID == listId && i.product_ID == productId);
+
+            if (existingItem != null)
+            {
+                TempData["ErrorMessage"] = $"{product.product_name} is already in this list.";
+                return RedirectToPage(new { ContextListId });
+            }
+
+            // Budget warning check
+            if (list.budget_amount.HasValue)
+            {
+                var wouldExceedBudget = (list.total_price + product.retail_price) > list.budget_amount.Value;
+                if (wouldExceedBudget)
+                {
+                    var overAmount = (list.total_price + product.retail_price) - list.budget_amount.Value;
+                    TempData["WarningMessage"] = $"Adding this item will put you ${overAmount:N2} over budget.";
+                }
+            }
 
             var item = new Product_list_items
             {
@@ -120,7 +153,7 @@ namespace CS392_WebApplication.Pages.ProductPages.Catalog
             await _listContext.SaveChangesAsync();
 
             TempData["SuccessMessage"] = $"{product.product_name} added to \"{list.title}\"!";
-            return RedirectToPage();
+            return RedirectToPage(new { ContextListId });
         }
 
         // ---------------------------------------------------------
@@ -148,6 +181,26 @@ namespace CS392_WebApplication.Pages.ProductPages.Catalog
                         .ToListAsync();
 
                     ImportedListIds = new HashSet<int>(imported);
+
+                    // Load context list for budget features
+                    if (ContextListId.HasValue)
+                    {
+                        ContextList = await _listContext.Product_list
+                            .FirstOrDefaultAsync(l => l.listID == ContextListId.Value && l.userID == appUser.UserID);
+
+                        if (ContextList != null)
+                        {
+                            var isImportedList = ImportedListIds.Contains(ContextList.listID);
+                            ShowBudgetFeatures = !isImportedList && 
+                                                 ContextList.list_type == ListType.User && 
+                                                 ContextList.budget_amount.HasValue;
+
+                            if (ShowBudgetFeatures)
+                            {
+                                BudgetRemaining = ContextList.budget_amount!.Value - ContextList.total_price;
+                            }
+                        }
+                    }
                 }
             }
 
@@ -169,6 +222,12 @@ namespace CS392_WebApplication.Pages.ProductPages.Catalog
                     p.description.Contains(Search));
             }
 
+            // BUDGET FILTER
+            if (FilterByBudget && ShowBudgetFeatures && BudgetRemaining > 0)
+            {
+                query = query.Where(p => p.retail_price <= BudgetRemaining);
+            }
+
             // REGULAR USERS CANNOT SEE BULK ITEMS
             if (!User.IsInRole("Admin") && !User.IsInRole("School"))
             {
@@ -176,7 +235,7 @@ namespace CS392_WebApplication.Pages.ProductPages.Catalog
             }
 
             // SORTING
-            bool isDefaultView = string.IsNullOrEmpty(Sort) && string.IsNullOrEmpty(Search) && string.IsNullOrEmpty(Category);
+            bool isDefaultView = string.IsNullOrEmpty(Sort) && string.IsNullOrEmpty(Search) && string.IsNullOrEmpty(Category) && !FilterByBudget;
 
             if (isDefaultView)
             {
@@ -194,83 +253,83 @@ namespace CS392_WebApplication.Pages.ProductPages.Catalog
             }
             else
             {
-            query = Sort switch
-            {
-                "name_asc" => query.OrderBy(p => p.product_name),
-                "name_desc" => query.OrderByDescending(p => p.product_name),
-                "price_asc" => query.OrderBy(p => p.retail_price),
-                "price_desc" => query.OrderByDescending(p => p.retail_price),
-                _ => query.OrderBy(p => p.product_name)
-            };
-
-            // PAGINATION
-            if (PageNumber < 1)
-                PageNumber = 1;
-
-            TotalItems = await query.CountAsync();
-
-            if (TotalItems > 0 && PageNumber > TotalPages)
-                PageNumber = TotalPages;
-
-            Products = await query
-                .Skip((PageNumber - 1) * PageSize)
-                .Take(PageSize)
-                .ToListAsync();
-
-            //API INGESTION - Only call API if no products found in DB, search field not empty, and if search matches a term on whitelist
-            bool isAllowedSearch = !string.IsNullOrEmpty(Search) && catalogListModel.AllowedSearches.Any(a =>
-                a.Contains(Search, StringComparison.OrdinalIgnoreCase) ||
-                Search.Contains(a, StringComparison.OrdinalIgnoreCase));
-
-            if (!string.IsNullOrEmpty(Search) && !Products.Any() && isAllowedSearch)
-            {
-                var apiProducts = new List<Products>();
-                var results = _serpApiService.SearchProducts(Search);
-                int resultLimit = 0;
-
-                foreach (JObject result in results ?? new JArray())
+                query = Sort switch
                 {
-                    if (resultLimit >= 30) break;
+                    "name_asc" => query.OrderBy(p => p.product_name),
+                    "name_desc" => query.OrderByDescending(p => p.product_name),
+                    "price_asc" => query.OrderBy(p => p.retail_price),
+                    "price_desc" => query.OrderByDescending(p => p.retail_price),
+                    _ => query.OrderBy(p => p.product_name)
+                };
 
-                    var product = new Products
+                // PAGINATION
+                if (PageNumber < 1)
+                    PageNumber = 1;
+
+                TotalItems = await query.CountAsync();
+
+                if (TotalItems > 0 && PageNumber > TotalPages)
+                    PageNumber = TotalPages;
+
+                Products = await query
+                    .Skip((PageNumber - 1) * PageSize)
+                    .Take(PageSize)
+                    .ToListAsync();
+
+                // API INGESTION - Only call API if no products found in DB, search field not empty, and if search matches a term on whitelist
+                bool isAllowedSearch = !string.IsNullOrEmpty(Search) && catalogListModel.AllowedSearches.Any(a =>
+                    a.Contains(Search, StringComparison.OrdinalIgnoreCase) ||
+                    Search.Contains(a, StringComparison.OrdinalIgnoreCase));
+
+                if (!string.IsNullOrEmpty(Search) && !Products.Any() && isAllowedSearch)
+                {
+                    var apiProducts = new List<Products>();
+                    var results = _serpApiService.SearchProducts(Search);
+                    int resultLimit = 0;
+
+                    foreach (JObject result in results ?? new JArray())
                     {
-                        product_name = result["title"]?.ToString()?[..Math.Min(result["title"]?.ToString()?.Length ?? 0, 50)] ?? "Unknown Product",
-                        description = result["snippet"]?.ToString()?.Trim() is { Length: > 0 } d1 ? d1
-                            : (result["extensions"] as JArray) is JArray ext && ext.Count > 0
-                                ? string.Join(" | ", ext.Select(e => e.ToString()))
-                                : "No description available.",
-                        retail_URL = result["link"]?.ToString()?.Trim() is { Length: > 0 } u1 ? u1
-                            : result["serpapi_link"]?.ToString()?.Trim() is { Length: > 0 } u2 ? u2 : "#",
-                        ImageURL = result["thumbnail"]?.ToString(),
-                        source_name = result["source"]?.ToString() is { Length: > 0 } sn ? sn[..Math.Min(sn.Length, 40)] : null,
-                        source_logo = result["source_icon"]?.ToString() is { Length: > 0 } sl ? sl[..Math.Min(sl.Length, 255)] : null,
-                        rating = result["rating"]?.ToObject<double?>(),
-                        reviews = result["reviews"]?.ToObject<int?>(),
-                        bulk_availability = false,
-                        google_product_id = result["product_id"]?.ToString(),
-                    };
+                        if (resultLimit >= 30) break;
 
-                    if (double.TryParse(result["extracted_price"]?.ToString(), out double retailPrice))
-                        product.retail_price = retailPrice;
-                    else
-                        product.retail_price = 0;
+                        var product = new Products
+                        {
+                            product_name = result["title"]?.ToString()?[..Math.Min(result["title"]?.ToString()?.Length ?? 0, 50)] ?? "Unknown Product",
+                            description = result["snippet"]?.ToString()?.Trim() is { Length: > 0 } d1 ? d1
+                                : (result["extensions"] as JArray) is JArray ext && ext.Count > 0
+                                    ? string.Join(" | ", ext.Select(e => e.ToString()))
+                                    : "No description available.",
+                            retail_URL = result["link"]?.ToString()?.Trim() is { Length: > 0 } u1 ? u1
+                                : result["serpapi_link"]?.ToString()?.Trim() is { Length: > 0 } u2 ? u2 : "#",
+                            ImageURL = result["thumbnail"]?.ToString(),
+                            source_name = result["source"]?.ToString() is { Length: > 0 } sn ? sn[..Math.Min(sn.Length, 40)] : null,
+                            source_logo = result["source_icon"]?.ToString() is { Length: > 0 } sl ? sl[..Math.Min(sl.Length, 255)] : null,
+                            rating = result["rating"]?.ToObject<double?>(),
+                            reviews = result["reviews"]?.ToObject<int?>(),
+                            bulk_availability = false,
+                            google_product_id = result["product_id"]?.ToString(),
+                        };
 
-                    apiProducts.Add(product);
-                    resultLimit++;
+                        if (double.TryParse(result["extracted_price"]?.ToString(), out double retailPrice))
+                            product.retail_price = retailPrice;
+                        else
+                            product.retail_price = 0;
+
+                        apiProducts.Add(product);
+                        resultLimit++;
+                    }
+
+                    if (apiProducts.Any())
+                    {
+                        _productsContext.Products.AddRange(apiProducts);
+                        await _productsContext.SaveChangesAsync();
+
+                        TotalItems = apiProducts.Count;
+                        Products = apiProducts
+                            .Skip((PageNumber - 1) * PageSize)
+                            .Take(PageSize)
+                            .ToList();
+                    }
                 }
-
-                if (apiProducts.Any())
-                {
-                    _productsContext.Products.AddRange(apiProducts);
-                    await _productsContext.SaveChangesAsync();
-
-                    TotalItems = apiProducts.Count;
-                    Products = apiProducts
-                        .Skip((PageNumber - 1) * PageSize)
-                        .Take(PageSize)
-                        .ToList();
-                }
-            }
             } // end else (search/sort/category active)
         }
     }
