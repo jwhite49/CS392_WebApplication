@@ -1,0 +1,25 @@
+{
+  "DetailedErrors": true,
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  },
+  "ConnectionStrings": {
+    "ApplicationDbContext": "REPLACE_WITH_CONNECTION_STRING"
+  },
+  "AISettings": {
+    "BaseAddress": "https://generativelanguage.googleapis.com/v1beta/",
+    "Model": "gemini-2.5-flash",
+    "ApiKey": "REPLACE_WITH_GEMINI_API_KEY"
+  },
+  "SerpApi": {
+    "ApiKey": "REPLACE_WITH_SERPAPI_KEY"
+  },
+  "MongoDBSettings": {
+    "ConnectionString": "REPLACE_WITH_MONGODB_CONNECTION_STRING",
+    "DatabaseName": "ProductsDB",
+    "CollectionName": "Products_file"
+  }
+}

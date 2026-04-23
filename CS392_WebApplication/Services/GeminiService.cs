@@ -209,5 +209,53 @@ Be friendly, concise, and helpful. Suggest what types of items the user should l
 
             return ExtractGeminiText(respText, _logger);
         }
+
+        /// <summary>
+        /// Uses Gemini with Google Search grounding to find current prices for a product
+        /// from multiple online retailers. Returns raw Gemini text (may contain JSON or prose).
+        /// </summary>
+        public async Task<string> SearchLivePricesAsync(string productName, double currentPrice, string? sourceName)
+        {
+            if (string.IsNullOrWhiteSpace(productName)) throw new ArgumentNullException(nameof(productName));
+
+            // Sanitize product name to prevent prompt injection
+            var safeName = productName.Replace("\"", "'").Replace("\n", " ").Trim();
+            var safeSource = (sourceName ?? "a retailer").Replace("\"", "'").Replace("\n", " ").Trim();
+
+            var prompt =
+                $"Search Google for the current retail price of \"{safeName}\". " +
+                $"The user currently sees it priced at ${currentPrice:F2} on {safeSource}. " +
+                "Find 3 to 5 other online retailers that sell this exact item and list their current prices. " +
+                "Respond ONLY with a valid JSON array and nothing else — no markdown, no explanation. " +
+                "Each element must have exactly these fields: " +
+                "\"source\" (retailer name string), \"price\" (number, use 0 if unknown), \"url\" (string, direct product page URL or empty string). " +
+                "Example output: [{\"source\":\"Amazon\",\"price\":12.99,\"url\":\"https://www.amazon.com/...\"}]";
+
+            var payload = new
+            {
+                tools = new object[] { new { google_search = new { } } },
+                contents = new[]
+                {
+                    new
+                    {
+                        parts = new[] { new { text = prompt } }
+                    }
+                }
+            };
+
+            var json = JsonSerializer.Serialize(payload);
+            var endpoint = $"models/{_model}:generateContent?key={_apiKey}";
+            using var content = new StringContent(json, Encoding.UTF8, "application/json");
+            using var resp = await _httpClient.PostAsync(endpoint, content);
+            var respText = await resp.Content.ReadAsStringAsync();
+
+            if (!resp.IsSuccessStatusCode)
+            {
+                _logger.LogError("Gemini price search error: {Status} - {Response}", resp.StatusCode, respText);
+                throw new InvalidOperationException($"Gemini API error: {resp.StatusCode}");
+            }
+
+            return ExtractGeminiText(respText, _logger);
+        }
     }
 }

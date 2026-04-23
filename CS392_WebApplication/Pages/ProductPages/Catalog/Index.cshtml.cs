@@ -298,13 +298,15 @@ namespace CS392_WebApplication.Pages.ProductPages.Catalog
                                 : (result["extensions"] as JArray) is JArray ext && ext.Count > 0
                                     ? string.Join(" | ", ext.Select(e => e.ToString()))
                                     : "No description available.",
-                            retail_URL = result["serpapi_link"]?.ToString()?.Trim() is { Length: > 0 } u ? u : result["link"]?.ToString() ?? "#",
+                            retail_URL = result["link"]?.ToString()?.Trim() is { Length: > 0 } u1 ? u1
+                                : result["serpapi_link"]?.ToString()?.Trim() is { Length: > 0 } u2 ? u2 : "#",
                             ImageURL = result["thumbnail"]?.ToString(),
                             source_name = result["source"]?.ToString() is { Length: > 0 } sn ? sn[..Math.Min(sn.Length, 40)] : null,
                             source_logo = result["source_icon"]?.ToString() is { Length: > 0 } sl ? sl[..Math.Min(sl.Length, 255)] : null,
                             rating = result["rating"]?.ToObject<double?>(),
                             reviews = result["reviews"]?.ToObject<int?>(),
                             bulk_availability = false,
+                            google_product_id = result["product_id"]?.ToString(),
                         };
 
                         if (double.TryParse(result["extracted_price"]?.ToString(), out double retailPrice))

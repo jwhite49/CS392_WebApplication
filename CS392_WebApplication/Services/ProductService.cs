@@ -30,14 +30,16 @@ namespace CS392_WebApplication.Services
                 var product = new Products //convert json to product object
                 {
                     product_name = result["title"]?.ToString(), //"?" prevents errors if value is missing
-                    description = result["description"]?.ToString(),
-                    retail_URL = result["serpapi_link"]?.ToString(),
-                    retail_price = result["extracted_price"].ToObject<double>(),
+                    description = result["snippet"]?.ToString() ?? "No description available.",
+                    retail_URL = result["link"]?.ToString()?.Trim() is { Length: > 0 } u1 ? u1
+                        : result["serpapi_link"]?.ToString()?.Trim() is { Length: > 0 } u2 ? u2 : "#",
+                    retail_price = double.TryParse(result["extracted_price"]?.ToString(), out double p) ? p : 0,
                     ImageURL = result["thumbnail"]?.ToString(),
                     source_name = result["source"]?.ToString(),
-                    source_logo = result["source_logo"]?.ToString(),
-                    rating = result["rating"] != null ? result["rating"].ToObject<double>() : 0.00,
+                    source_logo = result["source_icon"]?.ToString(),
+                    rating = result["rating"]?.ToObject<double?>(),
                     reviews = result["reviews"]?.ToObject<int?>(),
+                    google_product_id = result["product_id"]?.ToString(),
                 };
                 products.Add(product); //add converted product to list
             }

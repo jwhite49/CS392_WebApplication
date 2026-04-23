@@ -37,20 +37,6 @@ namespace CS392_WebApplication.API
                 data = search.GetJson(); //sends request and returns response in JSON format
                 results = (JArray)data["shopping_results"]; //reads results
                 Console.WriteLine("[SearchProducts] Result count: " + (results?.Count ?? 0));
-
-                /*foreach (JObject result in results ?? new JArray())
-                {
-                    var title = (result["title"]);      
-                    var description = (result["description"]);              
-                    var price = (result["extracted_price"]);
-                    var link = (result["serpapi_link"]);
-                    var image = (result["thumbnail"]);
-                    var source = (result["source"]);
-                    var sourceLogo = (result["source_logo"]);
-                    var rating = (result["rating"]);
-                    var reviews = (result["reviews"]);
-                    //loop extracts each result
-                }*/
             }
             catch (SerpApiSearchException ex)
             {
@@ -58,6 +44,42 @@ namespace CS392_WebApplication.API
                 Console.WriteLine(ex.ToString());
             }
             return results ?? new JArray(); //retunrs results or empty array if no results found
+        }
+
+        /// <summary>
+        /// Calls SerpAPI's Google Shopping Product endpoint to get real retailer offer links
+        /// for a specific product identified by its SerpAPI product_id.
+        /// Returns the "sellers_results" → "online_sellers" array.
+        /// </summary>
+        public async Task<JArray> GetProductOffersAsync(string productId)
+        {
+            Console.WriteLine("[GetProductOffersAsync] product_id: " + productId);
+            string apiKey = "de03a78be02d283d9baed511d2e0e45f94c7219b695d180bb97e24a6adbdecdb";
+
+            return await Task.Run(() =>
+            {
+                Hashtable ht = new Hashtable();
+                ht.Add("engine", "google_shopping_product");
+                ht.Add("product_id", productId);
+                ht.Add("gl", "us");
+                ht.Add("hl", "en");
+
+                try
+                {
+                    GoogleSearch search = new GoogleSearch(ht, apiKey);
+                    JObject data = search.GetJson();
+
+                    // Response shape: data["sellers_results"]["online_sellers"]
+                    var sellers = data["sellers_results"]?["online_sellers"] as JArray;
+                    Console.WriteLine("[GetProductOffersAsync] Offer count: " + (sellers?.Count ?? 0));
+                    return sellers ?? new JArray();
+                }
+                catch (SerpApiSearchException ex)
+                {
+                    Console.WriteLine("[GetProductOffersAsync] Exception: " + ex.ToString());
+                    return new JArray();
+                }
+            });
         }
         
     }
